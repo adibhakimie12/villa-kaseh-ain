@@ -40,7 +40,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-surface pb-28 md:pb-0">
+    <div className="min-h-screen bg-surface pb-0 md:pb-0">
       <SiteHeader pathname={pathname} onNavigate={navigate} />
       {pathname === '/' && <HomePage onNavigate={navigate} />}
       {pathname === '/booking' && <BookingPage />}
