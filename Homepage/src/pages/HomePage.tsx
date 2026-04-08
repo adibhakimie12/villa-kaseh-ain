@@ -55,18 +55,18 @@ export function HomePage({ onNavigate }: HomePageProps) {
           </div>
 
           <div className="mt-10 flex flex-col items-center gap-4 md:mt-14">
-            <div className="grid w-full max-w-3xl grid-cols-3 gap-3 rounded-[1.75rem] border border-white/12 bg-black/16 p-4 text-white/82 backdrop-blur-sm md:gap-4 md:p-5">
-              <div>
-                <p className="text-[10px] uppercase tracking-[0.3em] text-[#8fc8be]">Setting</p>
-                <p className="mt-2 font-headline text-2xl text-[#fff7ed] md:text-3xl">Beachfront</p>
+            <div className="grid w-full max-w-2xl grid-cols-3 gap-2 rounded-[1.5rem] border border-white/10 bg-black/18 px-4 py-3 text-white/82 backdrop-blur-md md:gap-3 md:px-5 md:py-4">
+              <div className="flex flex-col items-center text-center">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.28em] text-[#8fc8be]">Setting</p>
+                <p className="mt-2 font-headline text-2xl leading-none text-[#fff7ed] md:text-[2rem]">Beachfront</p>
               </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-[0.3em] text-[#8fc8be]">Best For</p>
-                <p className="mt-2 font-headline text-2xl text-[#fff7ed] md:text-3xl">Families</p>
+              <div className="flex flex-col items-center text-center">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.28em] text-[#8fc8be]">Best For</p>
+                <p className="mt-2 font-headline text-2xl leading-none text-[#fff7ed] md:text-[2rem]">Families</p>
               </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-[0.3em] text-[#8fc8be]">Mood</p>
-                <p className="mt-2 font-headline text-2xl text-[#fff7ed] md:text-3xl">Private</p>
+              <div className="flex flex-col items-center text-center">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.28em] text-[#8fc8be]">Mood</p>
+                <p className="mt-2 font-headline text-2xl leading-none text-[#fff7ed] md:text-[2rem]">Private</p>
               </div>
             </div>
           </div>
