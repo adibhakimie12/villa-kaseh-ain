@@ -12,6 +12,9 @@ Homepage/dist/
 .vercel/
 Homepage/.vercel/
 
+.codex/
+_skill_tmp/
+
 .env
 .env.local
 .env.production
