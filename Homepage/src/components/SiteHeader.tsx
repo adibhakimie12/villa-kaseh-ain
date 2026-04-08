@@ -36,15 +36,15 @@ export function SiteHeader({ pathname, onNavigate }: SiteHeaderProps) {
 
   const showFullHeader = !isHome || isScrolled;
   const headerClassName = showFullHeader
-    ? 'border-b border-[#d9c9ae]/70 bg-[#f8f1e5]/90 shadow-[0_14px_40px_rgba(70,52,28,0.10)] backdrop-blur-xl'
-    : 'border-b-0 bg-gradient-to-b from-black/30 via-black/10 to-transparent';
-  const navTextClassName = showFullHeader ? 'text-[#4f4334]' : 'text-white/0';
-  const activeNavTextClassName = showFullHeader ? 'text-[#2b241c]' : 'text-white/0';
+    ? 'border-b border-[#4c9085]/16 bg-[#f5efe6]/90 shadow-[0_14px_36px_rgba(53,85,80,0.10)] backdrop-blur-xl'
+    : 'border-b-0 bg-gradient-to-b from-black/45 via-black/12 to-transparent';
+  const navTextClassName = showFullHeader ? 'text-[#456962]/80' : 'text-white/0';
+  const activeNavTextClassName = showFullHeader ? 'text-[#22312d]' : 'text-white/0';
   const whatsappClassName = showFullHeader
-    ? 'bg-[#2d5d5d] text-white hover:bg-[#244c4c]'
+    ? 'border border-[#4c9085] bg-[#4c9085] text-[#0f1d1a] hover:bg-[#5aa196]'
     : 'pointer-events-none bg-white/0 text-transparent';
   const mobileButtonClassName = showFullHeader
-    ? 'border-[#ccb998] bg-white/60 text-[#4f4334]'
+    ? 'border-[#4c9085]/40 bg-white/60 text-[#35534d]'
     : 'border-white/25 bg-black/10 text-white';
 
   return (
@@ -78,10 +78,10 @@ export function SiteHeader({ pathname, onNavigate }: SiteHeaderProps) {
               key={item.path}
               onClick={() => handleNavigate(item.path)}
               type="button"
-              className={`text-xs uppercase tracking-[0.25em] transition ${
+              className={`text-[11px] uppercase tracking-[0.28em] transition ${
                 pathname === item.path
                   ? activeNavTextClassName
-                  : `${navTextClassName} ${showFullHeader ? 'hover:text-[#1f2b2e]' : ''}`
+                  : `${navTextClassName} ${showFullHeader ? 'hover:text-[#22312d]' : ''}`
               }`}
             >
               {item.label}
@@ -91,7 +91,7 @@ export function SiteHeader({ pathname, onNavigate }: SiteHeaderProps) {
             href={whatsappUrl}
             target="_blank"
             rel="noreferrer"
-            className={`rounded-full px-5 py-2 text-xs font-semibold uppercase tracking-[0.2em] transition ${whatsappClassName}`}
+            className={`rounded-full px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] transition ${whatsappClassName}`}
           >
             WhatsApp
           </a>
@@ -123,7 +123,7 @@ export function SiteHeader({ pathname, onNavigate }: SiteHeaderProps) {
                 type="button"
                 className={`rounded-xl border px-3 py-3 text-left text-xs uppercase tracking-[0.2em] ${
                   showFullHeader
-                    ? 'border-stone-300/90 text-[#2f3f43]'
+                    ? 'border-[#4c9085]/25 text-[#35534d]'
                     : 'border-white/10 text-white'
                 }`}
               >
@@ -135,7 +135,7 @@ export function SiteHeader({ pathname, onNavigate }: SiteHeaderProps) {
               target="_blank"
               rel="noreferrer"
               className={`rounded-xl px-5 py-3 text-center text-xs font-semibold uppercase tracking-[0.2em] ${
-                showFullHeader ? 'bg-[#2f5e61] text-white' : 'bg-white text-primary'
+                showFullHeader ? 'bg-[#4c9085] text-[#0f1d1a]' : 'bg-white text-primary'
               }`}
             >
               WhatsApp

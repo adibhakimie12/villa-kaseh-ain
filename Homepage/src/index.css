@@ -1,20 +1,20 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,500&family=Manrope:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Montserrat:wght@300;400;500;600;700&display=swap');
 @import 'tailwindcss';
 
 @theme {
-  --font-headline: 'Noto Serif', serif;
-  --font-body: 'Manrope', sans-serif;
+  --font-headline: 'Cormorant Garamond', serif;
+  --font-body: 'Montserrat', sans-serif;
 
-  --color-primary: #265353;
-  --color-primary-container: #3f6b6b;
+  --color-primary: #4c9085;
+  --color-primary-container: #66aea3;
   --color-on-primary: #ffffff;
 
-  --color-background: #fbf9f5;
-  --color-surface: #fbf9f5;
-  --color-surface-container-low: #f5f3ef;
+  --color-background: #f4eee6;
+  --color-surface: #f4eee6;
+  --color-surface-container-low: #efe6da;
 
-  --color-on-surface: #1b1c1a;
-  --color-on-surface-variant: #404848;
+  --color-on-surface: #231c17;
+  --color-on-surface-variant: #625f58;
 }
 
 @layer base {
@@ -37,28 +37,56 @@
     background: var(--color-surface);
     color: var(--color-on-surface);
     text-rendering: optimizeLegibility;
+    letter-spacing: 0.01em;
   }
 }
 
 @layer components {
   .lux-surface {
-    background: #ecf0f3;
+    background: linear-gradient(180deg, #f7f1e8 0%, #efe6da 100%);
     box-shadow:
-      18px 18px 30px rgba(209, 217, 230, 1),
-      -18px -18px 30px rgba(255, 255, 255, 1);
+      0 22px 50px rgba(39, 74, 69, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.55);
   }
 
   .lux-surface-soft {
-    background: #f3f0ea;
+    background: linear-gradient(180deg, #f8f2e9 0%, #f1e9de 100%);
     box-shadow:
-      14px 14px 28px rgba(218, 211, 201, 0.9),
-      -14px -14px 28px rgba(255, 255, 255, 0.95);
+      0 18px 40px rgba(44, 79, 74, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.72);
   }
 
   .lux-inset {
-    background: #ecf0f3;
+    background: #efe7db;
     box-shadow:
-      inset 18px 18px 30px rgba(209, 217, 230, 0.95),
-      inset -18px -18px 30px rgba(255, 255, 255, 1);
+      inset 0 12px 24px rgba(183, 156, 118, 0.12),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.8);
+  }
+
+  .lux-dark-panel {
+    background:
+      radial-gradient(circle at top, rgba(102, 174, 163, 0.12), transparent 35%),
+      linear-gradient(180deg, #335e57 0%, #274943 100%);
+    box-shadow:
+      0 24px 50px rgba(41, 72, 67, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  .lux-hero-overlay {
+    background:
+      linear-gradient(180deg, rgba(15, 27, 25, 0.58) 0%, rgba(15, 27, 25, 0.26) 32%, rgba(15, 27, 25, 0.42) 100%),
+      linear-gradient(90deg, rgba(18, 34, 31, 0.42) 0%, rgba(18, 34, 31, 0.12) 45%, rgba(18, 34, 31, 0.22) 100%);
+  }
+
+  .lux-kicker {
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    color: #7cb9af;
+  }
+
+  .lux-rule {
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, rgba(76, 144, 133, 0.7) 50%, transparent 100%);
   }
 }
