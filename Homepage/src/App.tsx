@@ -47,7 +47,7 @@ export default function App() {
       {pathname === '/contact' && <ContactPage />}
       {showFirstVisitPopup && <FirstVisitPopup onClose={closeFirstVisitPopup} onNavigate={navigate} />}
       <SiteFooter />
-      <MobileBottomBar onNavigate={navigate} />
+      <MobileBottomBar pathname={pathname} onNavigate={navigate} />
     </div>
   );
 }
