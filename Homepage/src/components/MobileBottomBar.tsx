@@ -7,17 +7,13 @@ interface MobileBottomBarProps {
 }
 
 export function MobileBottomBar({ onNavigate, pathname }: MobileBottomBarProps) {
-  if (pathname === '/') {
-    return null;
-  }
-
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50 p-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] md:hidden">
-      <div className="mx-auto grid max-w-md grid-cols-2 gap-2 rounded-[1.75rem] border border-stone-200 bg-white/95 p-2 shadow-[0_-8px_30px_rgba(15,23,42,0.10)] backdrop-blur">
+    <div className="fixed inset-x-0 bottom-0 z-50 px-3 pb-[max(env(safe-area-inset-bottom),0.5rem)] md:hidden">
+      <div className="mx-auto grid max-w-md grid-cols-2 gap-2 rounded-t-[1.5rem] border border-b-0 border-stone-200 bg-white/96 p-2 shadow-[0_-10px_24px_rgba(15,23,42,0.10)] backdrop-blur">
         <button
           type="button"
           onClick={() => onNavigate('/booking')}
-          className="rounded-full bg-primary px-4 py-3 text-[11px] font-bold uppercase tracking-[0.18em] text-white"
+          className="rounded-full bg-primary px-4 py-3 text-[10px] font-bold uppercase tracking-[0.18em] text-white"
         >
           Book Now
         </button>
@@ -25,7 +21,7 @@ export function MobileBottomBar({ onNavigate, pathname }: MobileBottomBarProps) 
           href={whatsappUrl}
           target="_blank"
           rel="noreferrer"
-          className="inline-flex items-center justify-center gap-2 rounded-full border border-primary/25 px-4 py-3 text-[11px] font-bold uppercase tracking-[0.18em] text-primary"
+          className="inline-flex items-center justify-center gap-2 rounded-full border border-primary/25 px-4 py-3 text-[10px] font-bold uppercase tracking-[0.18em] text-primary"
         >
           <MessageCircle size={14} />
           WhatsApp
