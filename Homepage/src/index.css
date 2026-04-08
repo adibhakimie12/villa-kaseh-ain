@@ -45,14 +45,16 @@
   .lux-surface {
     background: linear-gradient(180deg, #f7f1e8 0%, #efe6da 100%);
     box-shadow:
-      0 22px 50px rgba(39, 74, 69, 0.08),
-      inset 0 1px 0 rgba(255, 255, 255, 0.55);
+      16px 16px 32px rgba(217, 223, 223, 0.92),
+      -14px -14px 28px rgba(255, 255, 255, 0.92),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5);
   }
 
   .lux-surface-soft {
     background: linear-gradient(180deg, #f8f2e9 0%, #f1e9de 100%);
     box-shadow:
-      0 18px 40px rgba(44, 79, 74, 0.08),
+      12px 12px 28px rgba(220, 226, 226, 0.88),
+      -12px -12px 26px rgba(255, 255, 255, 0.95),
       inset 0 1px 0 rgba(255, 255, 255, 0.72);
   }
 

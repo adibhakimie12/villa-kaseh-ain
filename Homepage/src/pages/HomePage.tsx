@@ -18,7 +18,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
 
   return (
     <main className="bg-surface">
-      <section className="relative flex min-h-[100svh] items-end overflow-hidden pt-20 md:min-h-screen md:pt-28">
+      <section className="relative flex min-h-[100svh] items-center overflow-hidden pt-20 md:min-h-screen md:pt-28">
         <img
           className="absolute inset-0 h-full w-full object-cover"
           src={heroMedia.poster}
@@ -27,27 +27,22 @@ export function HomePage({ onNavigate }: HomePageProps) {
         <div className="lux-hero-overlay absolute inset-0" />
         <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#17120f] to-transparent" />
 
-        <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-col px-5 pb-12 md:px-10 md:pb-16">
-          <div className="max-w-3xl">
-            <p className="lux-kicker">Private coastal retreat in Marang</p>
-            <div className="mt-5 flex items-center gap-3 text-[#c9e2de]">
-              <div className="h-px w-14 bg-[#66aea3]/70" />
-              <p className="text-[11px] uppercase tracking-[0.34em]">Short escape, big memories</p>
-            </div>
-            <h1 className="mt-6 max-w-4xl font-headline text-5xl leading-[0.92] text-[#fff6ea] md:text-8xl">
-              A quieter kind of luxury by the sea.
+        <div className="relative z-10 mx-auto flex w-full max-w-7xl -translate-y-4 flex-col px-5 pb-8 md:-translate-y-8 md:px-10 md:pb-10">
+          <div className="mx-auto flex w-full max-w-3xl flex-col items-center text-center">
+            <p className="text-[10px] uppercase tracking-[0.36em] text-[#d6e7e3] md:text-[11px]">Kampung Pasir Putih, Marang</p>
+            <h1 className="mt-5 font-headline text-5xl font-semibold leading-[0.95] text-[#fff6ea] md:text-7xl">
+              Villa Kaseh Ain
             </h1>
-            <p className="mt-6 max-w-2xl text-sm leading-7 text-[#f1e6d7]/82 md:text-lg">
-              Villa Kaseh Ain is a private beachfront stay crafted for slow mornings, family gatherings, and evenings that feel
-              intimate, warm, and beautifully unhurried.
+            <p className="mt-5 max-w-2xl text-sm leading-7 text-[#f1e6d7]/88 md:text-base">
+              Konsep beachfront retreat untuk family, reunion dan private event dengan suasana tenang, eksklusif dan selesa.
             </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-8 flex w-full max-w-xl flex-col gap-3 sm:flex-row sm:justify-center">
               <button
                 onClick={() => onNavigate('/booking')}
                 type="button"
                 className="rounded-full border border-[#4c9085] bg-[#4c9085] px-8 py-4 text-[11px] font-semibold uppercase tracking-[0.26em] text-[#0f1d1a] transition hover:bg-[#5aa196]"
               >
-                Reserve Your Stay
+                Check Availability
               </button>
               <button
                 onClick={scrollToGallery}
@@ -59,8 +54,8 @@ export function HomePage({ onNavigate }: HomePageProps) {
             </div>
           </div>
 
-          <div className="mt-10 grid gap-4 md:mt-14 md:grid-cols-[1.2fr_0.8fr] md:gap-6">
-            <div className="grid grid-cols-3 gap-3 rounded-[1.75rem] border border-white/12 bg-black/16 p-4 text-white/82 backdrop-blur-sm md:gap-4 md:p-5">
+          <div className="mt-10 flex flex-col items-center gap-4 md:mt-14">
+            <div className="grid w-full max-w-3xl grid-cols-3 gap-3 rounded-[1.75rem] border border-white/12 bg-black/16 p-4 text-white/82 backdrop-blur-sm md:gap-4 md:p-5">
               <div>
                 <p className="text-[10px] uppercase tracking-[0.3em] text-[#8fc8be]">Setting</p>
                 <p className="mt-2 font-headline text-2xl text-[#fff7ed] md:text-3xl">Beachfront</p>
@@ -74,18 +69,18 @@ export function HomePage({ onNavigate }: HomePageProps) {
                 <p className="mt-2 font-headline text-2xl text-[#fff7ed] md:text-3xl">Private</p>
               </div>
             </div>
-
-            <div className="flex items-end justify-start md:justify-end">
-              <button
-                type="button"
-                onClick={scrollToIntro}
-                className="inline-flex items-center gap-3 rounded-full border border-white/18 bg-white/8 px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.28em] text-white backdrop-blur-md transition hover:bg-white/12"
-              >
-                Scroll to Discover
-                <ArrowRight size={14} />
-              </button>
-            </div>
           </div>
+        </div>
+
+        <div className="absolute bottom-6 left-1/2 z-10 -translate-x-1/2 md:bottom-8">
+          <button
+            type="button"
+            onClick={scrollToIntro}
+            className="inline-flex items-center gap-3 rounded-full border border-white/18 bg-white/8 px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.28em] text-white backdrop-blur-md transition hover:bg-white/12"
+          >
+            Scroll to Discover
+            <ArrowRight size={14} />
+          </button>
         </div>
       </section>
 
