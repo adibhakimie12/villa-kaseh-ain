@@ -1,0 +1,64 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,500&family=Manrope:wght@300;400;500;600;700&display=swap');
+@import 'tailwindcss';
+
+@theme {
+  --font-headline: 'Noto Serif', serif;
+  --font-body: 'Manrope', sans-serif;
+
+  --color-primary: #265353;
+  --color-primary-container: #3f6b6b;
+  --color-on-primary: #ffffff;
+
+  --color-background: #fbf9f5;
+  --color-surface: #fbf9f5;
+  --color-surface-container-low: #f5f3ef;
+
+  --color-on-surface: #1b1c1a;
+  --color-on-surface-variant: #404848;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html,
+  body,
+  #root {
+    margin: 0;
+    min-height: 100%;
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--color-surface);
+    color: var(--color-on-surface);
+    text-rendering: optimizeLegibility;
+  }
+}
+
+@layer components {
+  .lux-surface {
+    background: #ecf0f3;
+    box-shadow:
+      18px 18px 30px rgba(209, 217, 230, 1),
+      -18px -18px 30px rgba(255, 255, 255, 1);
+  }
+
+  .lux-surface-soft {
+    background: #f3f0ea;
+    box-shadow:
+      14px 14px 28px rgba(218, 211, 201, 0.9),
+      -14px -14px 28px rgba(255, 255, 255, 0.95);
+  }
+
+  .lux-inset {
+    background: #ecf0f3;
+    box-shadow:
+      inset 18px 18px 30px rgba(209, 217, 230, 0.95),
+      inset -18px -18px 30px rgba(255, 255, 255, 1);
+  }
+}

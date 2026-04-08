@@ -1,0 +1,70 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=Manrope:wght@300;400;500;600;700&display=swap');
+
+@theme {
+  --font-headline: "Noto Serif", serif;
+  --font-body: "Manrope", sans-serif;
+  --font-sans: "Manrope", sans-serif;
+
+  --color-tertiary-fixed: #ffdbcd;
+  --color-surface-container-high: #eae8e4;
+  --color-inverse-surface: #30312e;
+  --color-surface-dim: #dbdad6;
+  --color-secondary-container: #cfe3e7;
+  --color-secondary: #4f6265;
+  --color-on-tertiary-fixed: #311305;
+  --color-error-container: #ffdad6;
+  --color-surface-container-low: #f5f3ef;
+  --color-on-secondary-container: #536669;
+  --color-inverse-primary: #a1cfcf;
+  --color-on-tertiary-container: #ffd9ca;
+  --color-surface-bright: #fbf9f5;
+  --color-on-surface: #1b1c1a;
+  --color-tertiary-container: #865945;
+  --color-surface-container-highest: #e4e2de;
+  --color-tertiary-fixed-dim: #f3baa1;
+  --color-surface: #fbf9f5;
+  --color-on-tertiary: #ffffff;
+  --color-on-secondary: #ffffff;
+  --color-surface-tint: #396666;
+  --color-on-tertiary-fixed-variant: #653d2a;
+  --color-on-error: #ffffff;
+  --color-primary-fixed-dim: #a1cfcf;
+  --color-background: #fbf9f5;
+  --color-surface-container-lowest: #ffffff;
+  --color-on-primary: #ffffff;
+  --color-on-primary-fixed-variant: #204e4e;
+  --color-secondary-fixed-dim: #b6cacd;
+  --color-on-surface-variant: #404848;
+  --color-on-secondary-fixed-variant: #374a4d;
+  --color-on-primary-fixed: #002020;
+  --color-surface-container: #f0eeea;
+  --color-on-error-container: #93000a;
+  --color-outline-variant: #c0c8c7;
+  --color-surface-variant: #e4e2de;
+  --color-primary: #265353;
+  --color-outline: #707978;
+  --color-tertiary: #6b422f;
+  --color-primary-fixed: #bdebeb;
+  --color-on-secondary-fixed: #0b1e21;
+  --color-on-background: #1b1c1a;
+  --color-inverse-on-surface: #f2f0ec;
+  --color-primary-container: #3f6b6b;
+  --color-secondary-fixed: #d2e6e9;
+  --color-on-primary-container: #bbeae9;
+  --color-error: #ba1a1a;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-on-surface font-body antialiased;
+  }
+  .serif {
+    @apply font-headline;
+  }
+}
+
+/* Custom subtle scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #fbf9f5; }
+::-webkit-scrollbar-thumb { background: #c0c8c7; border-radius: 10px; }

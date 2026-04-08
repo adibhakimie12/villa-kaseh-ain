@@ -1,0 +1,11 @@
+{
+  "name": "villa-kaseh-ain-root",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "npm --prefix Homepage run dev",
+    "build": "npm --prefix Homepage run build",
+    "preview": "npm --prefix Homepage run preview",
+    "install:app": "npm --prefix Homepage install"
+  }
+}
