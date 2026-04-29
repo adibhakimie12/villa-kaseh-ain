@@ -2,7 +2,7 @@
 
 ## Scope
 
-Upgrade the existing `Homepage` admin panel into a full booking operations console while preserving the current luxury resort style. This phase extends the current React/SiteContent system with production-shaped UI, local/Supabase-ready data, and simulated payment states. Live payment gateway API calls, webhooks, and bank settlement handling are deferred to a backend phase because they require merchant credentials and secure server-side endpoints.
+Upgrade the existing `Homepage` admin panel into a full booking operations console while preserving the current luxury resort style. This phase extends the current React/SiteContent system with production-shaped UI, local/Supabase-ready data, manual bank transfer payment handling, owner QR payment instructions, receipt verification, and Resend-ready email notifications. Billplz and other live gateways are deferred because the owner may not have SSM or a corporate bank account.
 
 ## Existing Context
 
@@ -14,13 +14,13 @@ The booking page already calculates nights, pax, selected rate, total estimate, 
 
 Use a balanced local-first implementation:
 
-- Extend `SiteContent` with booking orders, payment gateway settings, payment rules, automation settings, WhatsApp templates, and future feature placeholders.
+- Extend `SiteContent` with booking orders, manual payment settings, payment rules, automation settings, WhatsApp templates, and future feature placeholders.
 - Keep the existing admin page and visual language, but split its internal UI into small helper components if the file becomes too large.
 - Add demo/default booking orders so the new admin screens are usable immediately.
 - Let the website booking form create a pending booking order in shared content and mark selected dates as temporarily held.
-- Treat payment actions as admin-side status updates and generated links in this phase, not live gateway charges.
+- Treat payment actions as manual transfer verification: customers receive bank/QR instructions, upload payment proof, and admins verify deposit or full payment from the admin panel.
 
-This path gives the owner a usable booking management system now and leaves a clean shape for real Billplz, senangPay, Stripe, OTA sync, and calendar sync later.
+This path gives an owner without SSM a usable booking management system now and leaves a clean shape for real Billplz, senangPay, Stripe, OTA sync, and calendar sync later.
 
 ## Admin Information Architecture
 
@@ -39,7 +39,7 @@ The main admin content should be organized as premium cards:
 - Booking Orders
 - Booking Detail Panel
 - Calendar Availability
-- Payment Gateway
+- Manual Payment Settings
 - Payment Rules
 - Auto Notifications
 - WhatsApp Template Settings
@@ -94,10 +94,18 @@ Actions:
 - Edit
 - Send WhatsApp
 - Send Email
-- Mark Paid
+- Mark Deposit Paid
+- Mark Full Paid
+- Reject Payment
 - Cancel Booking
 
 On mobile, the table becomes stacked booking cards with the same actions exposed as wrapped buttons.
+
+The primary paid action should be contextual:
+
+- If `Payment Option Selected = Deposit`, show `Mark Deposit Paid`.
+- If `Payment Option Selected = Full Amount`, show `Mark Full Paid`.
+- If the booking is already deposit paid and still has a remaining balance, show `Mark Full Paid` for the balance collection.
 
 ## Booking Detail Panel
 
@@ -120,8 +128,11 @@ Payment:
 
 - Amount
 - Deposit
+- Amount Paid
 - Remaining Balance
+- Payment Option Selected
 - Paid Date
+- Payment Proof / Receipt Preview
 
 Notes:
 
@@ -132,14 +143,29 @@ Panel buttons:
 - Confirm Booking
 - Send Reminder
 - Request Balance
+- Mark Deposit Paid
+- Mark Full Paid
+- Reject Payment
 - Refund
 - Close
 
-The panel updates the selected booking in shared content. Refund is a status action in this phase; it does not call a live gateway.
+The panel updates the selected booking in shared content. `Mark Deposit Paid` sets `Payment Status = Deposit Paid`, keeps the booking confirmed, stores paid amount, and leaves the remaining balance visible. `Mark Full Paid` sets `Payment Status = Paid Full`, sets remaining balance to RM0, stores paid date, and confirms the booking. Refund is a status action in this phase; it does not call a live gateway.
 
-## Payment Gateway Settings
+## Manual Payment Settings
 
-Create a `Payment Gateway` section with cards for:
+Create a `Manual Payment` section as the default active payment method. It contains:
+
+- Bank Name
+- Account Holder Name
+- Account Number
+- DuitNow / Bank QR Image
+- Payment Instructions
+- Owner Email
+- Owner WhatsApp Number
+
+The checkout page uses these values to show clear manual transfer instructions after a booking is submitted.
+
+Keep future gateway cards hidden or marked as not active:
 
 Billplz:
 
@@ -197,7 +223,17 @@ Admin Alerts:
 - Notify Owner New Booking
 - Notify Owner Payment Received
 
-In this phase, toggles configure intent and UI state. Actual scheduled sending requires backend automation in a later phase.
+In this phase, toggles configure which messages are sent. Resend should be used for live email notifications when `RESEND_API_KEY` and verified sender/domain settings are configured on the backend or deployment environment. New booking emails can send automatically after booking submit. Payment verified emails send when admin manually presses `Mark Deposit Paid` or `Mark Full Paid`. Scheduled reminders still require backend automation in a later phase.
+
+All booking and payment emails must include:
+
+- Booking ID
+- Guest name
+- Check-in and check-out
+- Pax
+- Payment option selected
+- Amount due or amount verified
+- Remaining balance when deposit is verified
 
 ## WhatsApp Template Settings
 
@@ -223,6 +259,8 @@ Buttons:
 
 Test Send opens a WhatsApp URL using the configured admin/owner number and sample-filled template.
 
+Customer-facing WhatsApp buttons should also be available after booking submission and after payment instructions. The link opens WhatsApp to the configured owner/admin number with a prefilled message containing Booking ID, guest name, dates, payment option, and amount due. This lets customers continue manually if they prefer WhatsApp.
+
 ## Calendar Availability Upgrade
 
 Enhance the current blocked-date area with a monthly visual calendar:
@@ -234,6 +272,15 @@ Enhance the current blocked-date area with a monthly visual calendar:
 
 Clicking a date opens related booking info if booked or pending. Manual blocked dates continue to use the existing `blockedDates` list. Booked and pending dates derive from booking orders and their statuses.
 
+Availability rules:
+
+- Manual blocked ranges always make dates unavailable.
+- Booking orders with `Awaiting Payment`, `Confirmed`, `Checked In`, or `Completed` make the selected stay dates unavailable.
+- Cancelled, failed, refunded, rejected, or expired bookings release the dates.
+- Pending payment dates appear yellow in the admin calendar and should be treated as unavailable on the public booking form while the expiry timer is active.
+- Confirmed/deposit-paid/full-paid bookings appear red.
+- Manual blocked dates appear grey.
+
 ## Website Booking Form Connection
 
 Change the frontend booking action from only WhatsApp inquiry to order creation:
@@ -242,10 +289,12 @@ Change the frontend booking action from only WhatsApp inquiry to order creation:
 2. Customer enters name, phone, and email.
 3. Submit creates a booking order with `Payment Status = Pending` and `Booking Status = Awaiting Payment`.
 4. Selected nights become held dates through the booking order status.
-5. The UI shows a payment step with generated payment-link placeholder and WhatsApp fallback.
-6. Admin can mark paid, confirm, cancel, or release dates.
+5. The UI shows a manual payment step with owner bank details, owner QR image, amount due, upload receipt control, and WhatsApp fallback.
+6. Admin can verify deposit, verify full payment, reject receipt, confirm, cancel, or release dates.
 
-If payment fails or remains unpaid beyond the configured timer, the UI can show the order as expired/cancelled when viewed. Automatic release needs backend scheduling in a later phase; frontend can calculate and label overdue orders.
+If payment proof is not submitted or remains unverified beyond the configured timer, the UI can show the order as expired/cancelled when viewed. Automatic release needs backend scheduling in a later phase; frontend can calculate and label overdue orders.
+
+Receipt upload can be stored as a data URL for local/demo mode. In production, receipt files should move to Supabase Storage or another server-side upload endpoint so images are not stored in browser localStorage.
 
 ## Future-Ready Placeholders
 
@@ -265,6 +314,7 @@ Add TypeScript interfaces in `siteContent.ts`:
 - `BookingOrder`
 - `PaymentStatus`
 - `BookingStatus`
+- `ManualPaymentSettings`
 - `PaymentGatewaySettings`
 - `PaymentRules`
 - `AutomationSettings`
@@ -293,6 +343,9 @@ Minimum verification:
 - Confirm existing Basic Content, Rates, and Blocked Dates still work.
 - Confirm new booking order creation updates admin list and calendar state.
 - Confirm status actions update metrics and booking detail panel.
+- Confirm manual blocked dates and customer booking dates both prevent overlapping checkout submissions.
+- Confirm customer payment instructions show owner bank/QR values and WhatsApp fallback.
+- Confirm admin payment buttons differ between deposit and full payment bookings.
 
 ## Out Of Scope For This Phase
 
@@ -300,6 +353,6 @@ Minimum verification:
 - Payment webhooks.
 - Secure storage of gateway secret keys.
 - Server-side scheduled auto-cancel jobs.
-- Real email/WhatsApp API sending.
+- Automated WhatsApp API sending.
 - OTA/Airbnb/Agoda sync.
 - Google Calendar API sync.
