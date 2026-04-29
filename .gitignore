@@ -14,6 +14,7 @@ Homepage/.vercel/
 
 .codex/
 _skill_tmp/
+.superpowers/
 
 .env
 .env.local
