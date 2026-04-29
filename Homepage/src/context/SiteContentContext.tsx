@@ -101,6 +101,37 @@ export function SiteContentProvider({ children }: { children: ReactNode }) {
     void refreshFromRemote();
   }, []);
 
+  useEffect(() => {
+    if (!isSupabaseConfigured || typeof window === 'undefined') {
+      return;
+    }
+
+    const handleWindowFocus = () => {
+      void refreshFromRemote();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void refreshFromRemote();
+      }
+    };
+
+    const intervalId = window.setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        void refreshFromRemote();
+      }
+    }, 60_000);
+
+    window.addEventListener('focus', handleWindowFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', handleWindowFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
   const value = useMemo<SiteContentContextValue>(() => ({
     content,
     whatsappUrl: buildWhatsappUrl(content.siteConfig),
