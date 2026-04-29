@@ -39,7 +39,8 @@ export interface BookingSettings {
 
 export type PaymentStatus = 'Pending' | 'Deposit Paid' | 'Paid Full' | 'Failed' | 'Refunded';
 export type BookingStatus = 'Confirmed' | 'Awaiting Payment' | 'Checked In' | 'Completed' | 'Cancelled';
-export type BookingTypeOption = 'Deposit Only' | 'Full Payment' | 'Both Options';
+export type BookingTypeOption = 'Deposit Only' | 'Full Payment Only' | 'Deposit + Full Payment Choice';
+export type PaymentOptionSelected = 'Deposit' | 'Full Amount';
 export type GatewayMode = 'Sandbox' | 'Live';
 export type GatewayProvider = 'billplz' | 'senangPay' | 'stripe';
 
@@ -55,7 +56,9 @@ export interface BookingOrder {
   rateId: string;
   totalAmount: number;
   depositAmount: number;
+  amountPaid: number;
   remainingBalance: number;
+  paymentOptionSelected: PaymentOptionSelected;
   paymentStatus: PaymentStatus;
   bookingStatus: BookingStatus;
   paidDate: string;
@@ -92,7 +95,7 @@ export interface PaymentGatewaySettings {
 }
 
 export interface PaymentRules {
-  bookingTypes: BookingTypeOption[];
+  bookingType: BookingTypeOption;
   depositAmount: number;
   depositPercentage: number;
   autoCancelAfterHours: number;
@@ -114,6 +117,8 @@ export interface AutomationSettings {
   adminAlerts: {
     newBooking: boolean;
     paymentReceived: boolean;
+    ownerEmail: string;
+    ownerWhatsappNumber: string;
   };
 }
 
@@ -221,7 +226,9 @@ export const defaultSiteContent: SiteContent = {
       rateId: 'weekend',
       totalAmount: 4840,
       depositAmount: 800,
+      amountPaid: 800,
       remainingBalance: 4040,
+      paymentOptionSelected: 'Deposit',
       paymentStatus: 'Deposit Paid',
       bookingStatus: 'Confirmed',
       paidDate: '2026-04-28',
@@ -241,7 +248,9 @@ export const defaultSiteContent: SiteContent = {
       rateId: 'weekday',
       totalAmount: 1690,
       depositAmount: 500,
-      remainingBalance: 1190,
+      amountPaid: 0,
+      remainingBalance: 1690,
+      paymentOptionSelected: 'Deposit',
       paymentStatus: 'Pending',
       bookingStatus: 'Awaiting Payment',
       paidDate: '',
@@ -261,7 +270,9 @@ export const defaultSiteContent: SiteContent = {
       rateId: 'event',
       totalAmount: 6200,
       depositAmount: 1000,
+      amountPaid: 6200,
       remainingBalance: 0,
+      paymentOptionSelected: 'Full Amount',
       paymentStatus: 'Paid Full',
       bookingStatus: 'Completed',
       paidDate: '2026-04-01',
@@ -291,10 +302,10 @@ export const defaultSiteContent: SiteContent = {
     },
   },
   paymentRules: {
-    bookingTypes: ['Deposit Only', 'Full Payment'],
+    bookingType: 'Deposit + Full Payment Choice',
     depositAmount: 500,
     depositPercentage: 30,
-    autoCancelAfterHours: 12,
+    autoCancelAfterHours: 1,
     refundable: true,
   },
   automationSettings: {
@@ -312,6 +323,8 @@ export const defaultSiteContent: SiteContent = {
     adminAlerts: {
       newBooking: true,
       paymentReceived: true,
+      ownerEmail: 'owner@villakasehain.com',
+      ownerWhatsappNumber: '60166341564',
     },
   },
   whatsappTemplates: {
@@ -376,7 +389,9 @@ export function normalizeSiteContent(input?: Partial<SiteContent> | null): SiteC
           rateId: order.rateId || defaultSiteContent.roomTypes[0].id,
           totalAmount: Number(order.totalAmount) || 0,
           depositAmount: Number(order.depositAmount) || 0,
-          remainingBalance: Number(order.remainingBalance) || 0,
+          amountPaid: Number(order.amountPaid) || 0,
+          remainingBalance: Number(order.remainingBalance) || Number(order.totalAmount) || 0,
+          paymentOptionSelected: order.paymentOptionSelected || 'Deposit',
           paymentStatus: order.paymentStatus || 'Pending',
           bookingStatus: order.bookingStatus || 'Awaiting Payment',
           paidDate: order.paidDate || '',
@@ -403,9 +418,7 @@ export function normalizeSiteContent(input?: Partial<SiteContent> | null): SiteC
     paymentRules: {
       ...defaultSiteContent.paymentRules,
       ...input?.paymentRules,
-      bookingTypes: input?.paymentRules?.bookingTypes?.length
-        ? input.paymentRules.bookingTypes
-        : defaultSiteContent.paymentRules.bookingTypes,
+      bookingType: input?.paymentRules?.bookingType ?? defaultSiteContent.paymentRules.bookingType,
       depositAmount: Number(input?.paymentRules?.depositAmount ?? defaultSiteContent.paymentRules.depositAmount),
       depositPercentage: Number(input?.paymentRules?.depositPercentage ?? defaultSiteContent.paymentRules.depositPercentage),
       autoCancelAfterHours: Number(input?.paymentRules?.autoCancelAfterHours ?? defaultSiteContent.paymentRules.autoCancelAfterHours),

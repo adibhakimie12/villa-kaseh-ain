@@ -39,7 +39,7 @@ import type {
 } from '../lib/siteContent';
 
 const bookingFilters: BookingFilter[] = ['Today', 'Upcoming', 'Paid', 'Pending', 'Cancelled'];
-const bookingTypeOptions: BookingTypeOption[] = ['Deposit Only', 'Full Payment', 'Both Options'];
+const bookingTypeOptions: BookingTypeOption[] = ['Deposit Only', 'Full Payment Only', 'Deposit + Full Payment Choice'];
 
 function AdminLoginCard() {
   const { canUseSupabase, login, loginWithSupabase, syncError } = useSiteContent();
@@ -280,7 +280,7 @@ export function AdminPage() {
     }));
   };
 
-  const updatePaymentRule = (field: keyof typeof content.paymentRules, value: number | boolean | BookingTypeOption[]) => {
+  const updatePaymentRule = (field: keyof typeof content.paymentRules, value: number | boolean | BookingTypeOption) => {
     updateContent((current) => ({
       ...current,
       paymentRules: {
@@ -436,8 +436,8 @@ export function AdminPage() {
           </div>
 
           <div className="mt-6 grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
-            <div className="overflow-hidden rounded-[1.5rem] border border-stone-200/80">
-              <div className="hidden min-w-[980px] grid-cols-[0.8fr_1fr_1fr_0.8fr_0.8fr_0.9fr_1fr_1fr_1.5fr] gap-3 bg-[#e8ded0] px-4 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-on-surface-variant lg:grid">
+            <div className="overflow-x-auto rounded-[1.5rem] border border-stone-200/80">
+              <div className="hidden min-w-[1280px] grid-cols-[0.75fr_1fr_1fr_0.85fr_0.85fr_0.65fr_0.95fr_1.35fr_2fr] gap-4 bg-[#e8ded0] px-4 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-on-surface-variant lg:grid">
                 <span>Booking ID</span>
                 <span>Guest Name</span>
                 <span>Phone Number</span>
@@ -450,7 +450,7 @@ export function AdminPage() {
               </div>
               <div className="divide-y divide-stone-200/80">
                 {filteredBookings.map((order) => (
-                  <div key={order.id} className="grid gap-4 bg-[#f8f2e9] p-4 lg:min-w-[980px] lg:grid-cols-[0.8fr_1fr_1fr_0.8fr_0.8fr_0.9fr_1fr_1fr_1.5fr] lg:items-center lg:gap-3">
+                  <div key={order.id} className="grid gap-4 bg-[#f8f2e9] p-4 lg:min-w-[1280px] lg:grid-cols-[0.75fr_1fr_1fr_0.85fr_0.85fr_0.65fr_0.95fr_1.35fr_2fr] lg:items-center lg:gap-4">
                     <button type="button" onClick={() => setSelectedBookingId(order.id)} className="text-left font-semibold text-primary">
                       {order.id}
                     </button>
@@ -674,14 +674,10 @@ export function AdminPage() {
                   {bookingTypeOptions.map((option) => (
                     <label key={option} className="flex min-h-11 items-center gap-3 rounded-2xl border border-stone-200/80 px-4">
                       <input
-                        type="checkbox"
-                        checked={content.paymentRules.bookingTypes.includes(option)}
-                        onChange={(event) => {
-                          const next = event.target.checked
-                            ? [...content.paymentRules.bookingTypes, option]
-                            : content.paymentRules.bookingTypes.filter((item) => item !== option);
-                          updatePaymentRule('bookingTypes', next);
-                        }}
+                        type="radio"
+                        name="admin-booking-type"
+                        checked={content.paymentRules.bookingType === option}
+                        onChange={() => updatePaymentRule('bookingType', option)}
                       />
                       <span className="text-sm">{option}</span>
                     </label>
@@ -697,7 +693,7 @@ export function AdminPage() {
                 <input type="number" value={content.paymentRules.depositPercentage} onChange={(event) => updatePaymentRule('depositPercentage', Number(event.target.value) || 0)} className="lux-inset mt-2 w-full rounded-2xl px-4 py-4 text-sm outline-none" />
               </label>
               <label className="block">
-                <FieldLabel>Auto Cancel Unpaid Booking After</FieldLabel>
+                <FieldLabel>Auto Cancel Unpaid Booking After (Hours)</FieldLabel>
                 <input type="number" value={content.paymentRules.autoCancelAfterHours} onChange={(event) => updatePaymentRule('autoCancelAfterHours', Number(event.target.value) || 0)} className="lux-inset mt-2 w-full rounded-2xl px-4 py-4 text-sm outline-none" />
               </label>
               <label className="flex min-h-11 items-center justify-between gap-4 rounded-2xl border border-stone-200/80 px-4">
@@ -745,6 +741,47 @@ export function AdminPage() {
               </div>
               <div>
                 <FieldLabel>Admin Alerts</FieldLabel>
+                <label className="mt-2 block">
+                  <span className="text-xs uppercase tracking-[0.18em] text-on-surface-variant">Owner Email</span>
+                  <input
+                    type="email"
+                    value={content.automationSettings.adminAlerts.ownerEmail}
+                    onChange={(event) => updateContent((current) => ({
+                      ...current,
+                      automationSettings: {
+                        ...current.automationSettings,
+                        adminAlerts: {
+                          ...current.automationSettings.adminAlerts,
+                          ownerEmail: event.target.value,
+                        },
+                      },
+                    }))}
+                    className="lux-inset mt-2 w-full rounded-2xl px-4 py-3 text-sm outline-none"
+                    placeholder="owner@email.com"
+                  />
+                </label>
+                <label className="mt-3 block">
+                  <span className="text-xs uppercase tracking-[0.18em] text-on-surface-variant">Owner WhatsApp Number</span>
+                  <input
+                    type="tel"
+                    value={content.automationSettings.adminAlerts.ownerWhatsappNumber}
+                    onChange={(event) => updateContent((current) => ({
+                      ...current,
+                      automationSettings: {
+                        ...current.automationSettings,
+                        adminAlerts: {
+                          ...current.automationSettings.adminAlerts,
+                          ownerWhatsappNumber: event.target.value,
+                        },
+                      },
+                    }))}
+                    className="lux-inset mt-2 w-full rounded-2xl px-4 py-3 text-sm outline-none"
+                    placeholder="60123456789"
+                  />
+                </label>
+                <p className="mt-3 text-xs leading-relaxed text-on-surface-variant">
+                  Owner alerts guna contact ini. Email toggles hantar email, WhatsApp toggles hantar WhatsApp. Bila payment gateway live nanti, payment received alert trigger dari gateway/webhook.
+                </p>
                 {[
                   ['newBooking', 'Notify Owner New Booking'],
                   ['paymentReceived', 'Notify Owner Payment Received'],
@@ -869,7 +906,9 @@ export function AdminPage() {
                 <div className="mt-4 space-y-2 text-sm">
                   <div className="flex justify-between"><span>Amount</span><span>RM {selectedBooking.totalAmount.toLocaleString()}</span></div>
                   <div className="flex justify-between"><span>Deposit</span><span>RM {selectedBooking.depositAmount.toLocaleString()}</span></div>
+                  <div className="flex justify-between"><span>Amount Paid</span><span>RM {selectedBooking.amountPaid.toLocaleString()}</span></div>
                   <div className="flex justify-between"><span>Remaining Balance</span><span>RM {selectedBooking.remainingBalance.toLocaleString()}</span></div>
+                  <div className="flex justify-between"><span>Payment Option Selected</span><span>{selectedBooking.paymentOptionSelected}</span></div>
                   <div className="flex justify-between"><span>Paid Date</span><span>{selectedBooking.paidDate || 'Not paid yet'}</span></div>
                 </div>
                 <div className="mt-4 flex flex-wrap gap-2">

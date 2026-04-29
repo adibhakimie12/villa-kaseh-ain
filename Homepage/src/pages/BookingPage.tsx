@@ -1,9 +1,17 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CalendarDays, Users, CheckCircle2, CreditCard, MessageCircle } from 'lucide-react';
 import { useSiteContent } from '../context/SiteContentContext';
 import { eachNightInStay, formatLongDate, monthMatrix, toIsoDate } from '../lib/date';
-import { buildPaymentLink, createBookingOrder, dayDiff, getAvailabilityStateForDate } from '../lib/booking';
-import type { BookingOrder } from '../lib/siteContent';
+import {
+  buildPaymentLink,
+  createBookingOrder,
+  dayDiff,
+  getAllowedPaymentOptions,
+  getBookingBalance,
+  getPaymentDueNow,
+  getAvailabilityStateForDate,
+} from '../lib/booking';
+import type { BookingOrder, PaymentOptionSelected } from '../lib/siteContent';
 
 export function BookingPage() {
   const { content, updateContent } = useSiteContent();
@@ -16,6 +24,7 @@ export function BookingPage() {
   const [email, setEmail] = useState('');
   const [notes, setNotes] = useState('');
   const [submittedOrder, setSubmittedOrder] = useState<BookingOrder | null>(null);
+  const [paymentOptionSelected, setPaymentOptionSelected] = useState<PaymentOptionSelected>('Deposit');
 
   const blockedDates = content.bookingSettings.blockedDates;
   const blockedDateSet = useMemo(() => new Set(blockedDates), [blockedDates]);
@@ -46,6 +55,15 @@ export function BookingPage() {
     };
   }, [extraGuests, nights, selectedRate.price]);
 
+  const allowedPaymentOptions = useMemo(() => getAllowedPaymentOptions(content.paymentRules), [content.paymentRules]);
+  const bookingBalance = useMemo(() => getBookingBalance(summary.total, content.paymentRules), [content.paymentRules, summary.total]);
+
+  useEffect(() => {
+    if (!allowedPaymentOptions.includes(paymentOptionSelected)) {
+      setPaymentOptionSelected(allowedPaymentOptions[0]);
+    }
+  }, [allowedPaymentOptions, paymentOptionSelected]);
+
   const whatsappUrl = useMemo(() => {
     const message = [
       'Hi Villa Kaseh Ain, saya nak buat booking.',
@@ -74,6 +92,7 @@ export function BookingPage() {
       rateId: selectedRate.id,
       totalAmount: summary.total,
       paymentRules: content.paymentRules,
+      paymentOptionSelected,
       notes: notes.trim(),
     });
 
@@ -278,6 +297,32 @@ export function BookingPage() {
             </div>
           </div>
 
+          <div className="mt-6 rounded-[1.75rem] border border-[#d9c9b4] bg-[#fff8ef] p-5">
+            <p className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Payment Option</p>
+            <div className="mt-4 grid gap-3">
+              {allowedPaymentOptions.map((option) => {
+                const amount = getPaymentDueNow(summary.total, bookingBalance.depositAmount, option);
+                return (
+                  <label key={option} className="flex min-h-11 items-center justify-between gap-3 rounded-2xl border border-stone-200/80 px-4 py-3 text-sm">
+                    <span className="flex items-center gap-3">
+                      <input
+                        type="radio"
+                        name="payment-option"
+                        checked={paymentOptionSelected === option}
+                        onChange={() => setPaymentOptionSelected(option)}
+                      />
+                      {option === 'Deposit' ? `Pay Deposit RM${bookingBalance.depositAmount.toLocaleString()}` : 'Pay Full Amount'}
+                    </span>
+                    <span className="font-semibold text-primary">RM {amount.toLocaleString()}</span>
+                  </label>
+                );
+              })}
+            </div>
+            <p className="mt-3 text-xs text-on-surface-variant">
+              Unpaid booking will expire after {content.paymentRules.autoCancelAfterHours} hour.
+            </p>
+          </div>
+
           <div className="mt-6 space-y-4">
             <label className="block">
               <span className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Guest Name</span>
@@ -331,8 +376,12 @@ export function BookingPage() {
               </p>
               <div className="mt-4 space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span>Deposit</span>
-                  <span>{`RM ${submittedOrder.depositAmount.toLocaleString()}`}</span>
+                  <span>Payment Option</span>
+                  <span>{submittedOrder.paymentOptionSelected}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Amount Due Now</span>
+                  <span>{`RM ${getPaymentDueNow(submittedOrder.totalAmount, submittedOrder.depositAmount, submittedOrder.paymentOptionSelected).toLocaleString()}`}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Balance</span>

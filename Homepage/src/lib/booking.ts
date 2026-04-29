@@ -1,5 +1,5 @@
 import { eachNightInStay, toIsoDate } from './date';
-import type { BookingOrder, BookingStatus, PaymentRules, PaymentStatus } from './siteContent';
+import type { BookingOrder, BookingStatus, PaymentOptionSelected, PaymentRules, PaymentStatus } from './siteContent';
 
 export type BookingFilter = 'Today' | 'Upcoming' | 'Paid' | 'Pending' | 'Cancelled';
 export type AvailabilityState = 'available' | 'booked' | 'pending' | 'blocked';
@@ -32,8 +32,18 @@ export function getBookingBalance(totalAmount: number, rules: PaymentRules) {
   const depositAmount = Math.min(totalAmount, fixedDeposit > 0 ? fixedDeposit : percentageDeposit);
   return {
     depositAmount,
-    remainingBalance: Math.max(totalAmount - depositAmount, 0),
+    remainingBalance: totalAmount,
   };
+}
+
+export function getAllowedPaymentOptions(rules: PaymentRules): PaymentOptionSelected[] {
+  if (rules.bookingType === 'Deposit Only') return ['Deposit'];
+  if (rules.bookingType === 'Full Payment Only') return ['Full Amount'];
+  return ['Deposit', 'Full Amount'];
+}
+
+export function getPaymentDueNow(totalAmount: number, depositAmount: number, paymentOption: PaymentOptionSelected) {
+  return paymentOption === 'Full Amount' ? totalAmount : depositAmount;
 }
 
 export function createBookingOrder(input: {
@@ -47,6 +57,7 @@ export function createBookingOrder(input: {
   rateId: string;
   totalAmount: number;
   paymentRules: PaymentRules;
+  paymentOptionSelected: PaymentOptionSelected;
   notes?: string;
   now?: Date;
 }): BookingOrder {
@@ -64,7 +75,9 @@ export function createBookingOrder(input: {
     rateId: input.rateId,
     totalAmount: input.totalAmount,
     depositAmount: balance.depositAmount,
+    amountPaid: 0,
     remainingBalance: balance.remainingBalance,
+    paymentOptionSelected: input.paymentOptionSelected,
     paymentStatus: 'Pending',
     bookingStatus: 'Awaiting Payment',
     paidDate: '',
@@ -167,7 +180,8 @@ export function updateBookingStatus(
     paymentStatus,
     bookingStatus,
     paidDate,
-    remainingBalance: paymentStatus === 'Paid Full' ? 0 : order.remainingBalance,
+    amountPaid: paymentStatus === 'Paid Full' ? order.totalAmount : paymentStatus === 'Deposit Paid' ? order.depositAmount : order.amountPaid,
+    remainingBalance: paymentStatus === 'Paid Full' ? 0 : paymentStatus === 'Deposit Paid' ? Math.max(order.totalAmount - order.depositAmount, 0) : order.remainingBalance,
     updatedAt: new Date().toISOString(),
   };
 }

@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
 import {
   buildBookingMetrics,
+  getAllowedPaymentOptions,
   getAvailabilityStateForDate,
   getBookingBalance,
   renderBookingTemplate,
 } from './booking';
-import type { BookingOrder, PaymentRules } from './siteContent';
+import { defaultSiteContent, normalizeSiteContent, type BookingOrder, type PaymentRules } from './siteContent';
 
 const orders: BookingOrder[] = [
   {
@@ -20,7 +21,9 @@ const orders: BookingOrder[] = [
     rateId: 'weekend',
     totalAmount: 4400,
     depositAmount: 800,
+    amountPaid: 800,
     remainingBalance: 3600,
+    paymentOptionSelected: 'Deposit',
     paymentStatus: 'Deposit Paid',
     bookingStatus: 'Confirmed',
     paidDate: '2026-04-28',
@@ -40,7 +43,9 @@ const orders: BookingOrder[] = [
     rateId: 'weekday',
     totalAmount: 1800,
     depositAmount: 500,
-    remainingBalance: 1300,
+    amountPaid: 0,
+    remainingBalance: 1800,
+    paymentOptionSelected: 'Deposit',
     paymentStatus: 'Pending',
     bookingStatus: 'Awaiting Payment',
     paidDate: '',
@@ -60,7 +65,9 @@ const orders: BookingOrder[] = [
     rateId: 'event',
     totalAmount: 5600,
     depositAmount: 1000,
+    amountPaid: 5600,
     remainingBalance: 0,
+    paymentOptionSelected: 'Full Amount',
     paymentStatus: 'Paid Full',
     bookingStatus: 'Completed',
     paidDate: '2026-04-01',
@@ -71,10 +78,10 @@ const orders: BookingOrder[] = [
 ];
 
 const rules: PaymentRules = {
-  bookingTypes: ['Deposit Only', 'Full Payment'],
+  bookingType: 'Deposit + Full Payment Choice',
   depositAmount: 500,
   depositPercentage: 30,
-  autoCancelAfterHours: 12,
+  autoCancelAfterHours: 1,
   refundable: true,
 };
 
@@ -93,12 +100,31 @@ assert.equal(getAvailabilityStateForDate('2026-05-21', orders, ['2026-05-20']).s
 
 assert.deepEqual(getBookingBalance(1800, rules), {
   depositAmount: 500,
-  remainingBalance: 1300,
+  remainingBalance: 1800,
 });
+
+assert.deepEqual(getAllowedPaymentOptions(rules), ['Deposit', 'Full Amount']);
+assert.deepEqual(getAllowedPaymentOptions({ ...rules, bookingType: 'Deposit Only' }), ['Deposit']);
+assert.deepEqual(getAllowedPaymentOptions({ ...rules, bookingType: 'Full Payment Only' }), ['Full Amount']);
 
 assert.equal(
   renderBookingTemplate('Hi {name},\n{checkin} - {checkout}\nRM {amount}', orders[0]),
   'Hi Nur Aina,\n2026-05-10 - 2026-05-12\nRM 4,400',
+);
+
+assert.equal(defaultSiteContent.automationSettings.adminAlerts.ownerEmail, 'owner@villakasehain.com');
+assert.equal(defaultSiteContent.automationSettings.adminAlerts.ownerWhatsappNumber, '60166341564');
+assert.equal(
+  normalizeSiteContent({
+    automationSettings: {
+      ...defaultSiteContent.automationSettings,
+      adminAlerts: {
+        ...defaultSiteContent.automationSettings.adminAlerts,
+        ownerEmail: 'boss@example.com',
+      },
+    },
+  }).automationSettings.adminAlerts.ownerEmail,
+  'boss@example.com',
 );
 
 console.log('booking helper tests passed');
