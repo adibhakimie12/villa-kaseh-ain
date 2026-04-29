@@ -1,23 +1,21 @@
 import { useMemo, useState } from 'react';
-import { CalendarDays, Users, CheckCircle2 } from 'lucide-react';
+import { CalendarDays, Users, CheckCircle2, CreditCard, MessageCircle } from 'lucide-react';
 import { useSiteContent } from '../context/SiteContentContext';
 import { eachNightInStay, formatLongDate, monthMatrix, toIsoDate } from '../lib/date';
-
-function dayDiff(checkIn: string, checkOut: string) {
-  if (!checkIn || !checkOut) return 0;
-  const start = new Date(checkIn);
-  const end = new Date(checkOut);
-  const diff = end.getTime() - start.getTime();
-  if (diff <= 0) return 0;
-  return Math.ceil(diff / (1000 * 60 * 60 * 24));
-}
+import { buildPaymentLink, createBookingOrder, dayDiff, getAvailabilityStateForDate } from '../lib/booking';
+import type { BookingOrder } from '../lib/siteContent';
 
 export function BookingPage() {
-  const { content } = useSiteContent();
+  const { content, updateContent } = useSiteContent();
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
   const [guestCount, setGuestCount] = useState(6);
   const [selectedRate, setSelectedRate] = useState(content.roomTypes[0]);
+  const [guestName, setGuestName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [notes, setNotes] = useState('');
+  const [submittedOrder, setSubmittedOrder] = useState<BookingOrder | null>(null);
 
   const blockedDates = content.bookingSettings.blockedDates;
   const blockedDateSet = useMemo(() => new Set(blockedDates), [blockedDates]);
@@ -32,6 +30,7 @@ export function BookingPage() {
   }, [blockedDateSet, checkIn, checkOut]);
 
   const isSelectionAvailable = Boolean(checkIn && checkOut && overlappingBlockedDates.length === 0);
+  const canSubmitBooking = isSelectionAvailable && nights > 0 && guestName.trim() && phone.trim() && email.trim();
 
   const summary = useMemo(() => {
     const subtotal = nights * selectedRate.price;
@@ -61,6 +60,29 @@ export function BookingPage() {
 
     return `https://wa.me/${content.siteConfig.whatsappNumber}?text=${encodeURIComponent(message)}`;
   }, [checkIn, checkOut, content.siteConfig.whatsappNumber, guestCount, nights, selectedRate.label, summary.total]);
+
+  const handleCreateBooking = () => {
+    if (!canSubmitBooking) return;
+    const order = createBookingOrder({
+      existingOrders: content.bookingOrders,
+      guestName: guestName.trim(),
+      phone: phone.trim(),
+      email: email.trim(),
+      checkIn,
+      checkOut,
+      pax: guestCount,
+      rateId: selectedRate.id,
+      totalAmount: summary.total,
+      paymentRules: content.paymentRules,
+      notes: notes.trim(),
+    });
+
+    updateContent((current) => ({
+      ...current,
+      bookingOrders: [order, ...current.bookingOrders],
+    }));
+    setSubmittedOrder(order);
+  };
 
   const today = toIsoDate(new Date());
   const calendarAnchors = [new Date(), new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1)];
@@ -149,7 +171,7 @@ export function BookingPage() {
                     {days.map((date) => {
                       const isoDate = toIsoDate(date);
                       const isCurrentMonth = date.getMonth() === anchor.getMonth();
-                      const isBlocked = blockedDateSet.has(isoDate);
+                      const availability = getAvailabilityStateForDate(isoDate, content.bookingOrders, blockedDates);
                       const isPast = isoDate < today;
                       const isSelected = isoDate === checkIn || isoDate === checkOut;
                       return (
@@ -158,8 +180,12 @@ export function BookingPage() {
                           className={`flex aspect-square items-center justify-center rounded-2xl text-sm ${
                             !isCurrentMonth
                               ? 'bg-transparent text-stone-300'
-                              : isBlocked
+                              : availability.state === 'booked'
                                 ? 'bg-[#f8dede] font-semibold text-[#a14646]'
+                                : availability.state === 'pending'
+                                  ? 'bg-[#fff0bd] font-semibold text-[#8b6b19]'
+                                  : availability.state === 'blocked'
+                                    ? 'bg-stone-300 font-semibold text-stone-600'
                                 : isSelected
                                   ? 'bg-primary font-semibold text-white'
                                   : 'lux-inset text-on-surface'
@@ -183,7 +209,15 @@ export function BookingPage() {
               </span>
               <span className="inline-flex items-center gap-2 text-on-surface-variant">
                 <span className="h-3 w-3 rounded-full bg-[#f8dede]" />
-                Unavailable
+                Booked
+              </span>
+              <span className="inline-flex items-center gap-2 text-on-surface-variant">
+                <span className="h-3 w-3 rounded-full bg-[#fff0bd]" />
+                Pending Payment
+              </span>
+              <span className="inline-flex items-center gap-2 text-on-surface-variant">
+                <span className="h-3 w-3 rounded-full bg-stone-300" />
+                Manual Blocked
               </span>
             </div>
             <div className="mt-4 flex flex-wrap gap-3">
@@ -244,16 +278,100 @@ export function BookingPage() {
             </div>
           </div>
 
+          <div className="mt-6 space-y-4">
+            <label className="block">
+              <span className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Guest Name</span>
+              <input
+                value={guestName}
+                onChange={(event) => setGuestName(event.target.value)}
+                className="lux-inset mt-2 w-full rounded-2xl px-4 py-4 text-sm outline-none"
+                placeholder="Nama penuh"
+              />
+            </label>
+            <label className="block">
+              <span className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Phone Number</span>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(event) => setPhone(event.target.value)}
+                className="lux-inset mt-2 w-full rounded-2xl px-4 py-4 text-sm outline-none"
+                placeholder="60123456789"
+              />
+            </label>
+            <label className="block">
+              <span className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Email</span>
+              <input
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                className="lux-inset mt-2 w-full rounded-2xl px-4 py-4 text-sm outline-none"
+                placeholder="nama@email.com"
+              />
+            </label>
+            <label className="block">
+              <span className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Notes</span>
+              <textarea
+                value={notes}
+                onChange={(event) => setNotes(event.target.value)}
+                className="lux-inset mt-2 min-h-24 w-full rounded-2xl px-4 py-4 text-sm outline-none"
+                placeholder="Request khas, event, atau masa arrival"
+              />
+            </label>
+          </div>
+
+          {submittedOrder ? (
+            <div className="mt-6 rounded-[1.75rem] border border-[#d9c9b4] bg-[#fff8ef] p-5">
+              <div className="flex items-center gap-2 text-primary">
+                <CreditCard size={16} />
+                <p className="text-xs font-bold uppercase tracking-[0.2em]">Payment Step Ready</p>
+              </div>
+              <h3 className="mt-3 font-headline text-2xl">{submittedOrder.id}</h3>
+              <p className="mt-2 text-sm text-on-surface-variant">
+                Booking direkod sebagai Awaiting Payment. Admin boleh confirm selepas bayaran diterima.
+              </p>
+              <div className="mt-4 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span>Deposit</span>
+                  <span>{`RM ${submittedOrder.depositAmount.toLocaleString()}`}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Balance</span>
+                  <span>{`RM ${submittedOrder.remainingBalance.toLocaleString()}`}</span>
+                </div>
+              </div>
+              <a
+                href={buildPaymentLink(submittedOrder, content.paymentGateway.activeGateway)}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-4 inline-flex w-full items-center justify-center rounded-full bg-[#22312d] px-6 py-4 text-xs font-bold uppercase tracking-[0.2em] text-white"
+              >
+                Generate Payment Link
+              </a>
+            </div>
+          ) : null}
+
+          <button
+            type="button"
+            onClick={handleCreateBooking}
+            disabled={!canSubmitBooking}
+            className={`mt-6 inline-flex w-full items-center justify-center rounded-full px-6 py-4 text-xs font-bold uppercase tracking-[0.2em] ${
+              canSubmitBooking ? 'bg-primary text-white' : 'cursor-not-allowed bg-stone-300 text-stone-500'
+            }`}
+          >
+            {isSelectionAvailable ? 'Create Pending Booking' : 'Selected Dates Unavailable'}
+          </button>
+
           <a
             href={isSelectionAvailable ? whatsappUrl : undefined}
             target="_blank"
             rel="noreferrer"
             aria-disabled={!isSelectionAvailable}
-            className={`mt-6 inline-flex w-full items-center justify-center rounded-full px-6 py-4 text-xs font-bold uppercase tracking-[0.2em] ${
-              isSelectionAvailable ? 'bg-primary text-white' : 'cursor-not-allowed bg-stone-300 text-stone-500'
+            className={`mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full border px-6 py-4 text-xs font-bold uppercase tracking-[0.2em] ${
+              isSelectionAvailable ? 'border-primary text-primary' : 'cursor-not-allowed border-stone-300 text-stone-500'
             }`}
           >
-            {isSelectionAvailable ? 'Continue via WhatsApp' : 'Selected Dates Unavailable'}
+            <MessageCircle size={14} />
+            WhatsApp Fallback
           </a>
 
           <ul className="mt-6 space-y-2 text-sm text-on-surface-variant">

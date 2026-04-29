@@ -37,6 +37,97 @@ export interface BookingSettings {
   blockedDates: string[];
 }
 
+export type PaymentStatus = 'Pending' | 'Deposit Paid' | 'Paid Full' | 'Failed' | 'Refunded';
+export type BookingStatus = 'Confirmed' | 'Awaiting Payment' | 'Checked In' | 'Completed' | 'Cancelled';
+export type BookingTypeOption = 'Deposit Only' | 'Full Payment' | 'Both Options';
+export type GatewayMode = 'Sandbox' | 'Live';
+export type GatewayProvider = 'billplz' | 'senangPay' | 'stripe';
+
+export interface BookingOrder {
+  id: string;
+  guestName: string;
+  phone: string;
+  email: string;
+  checkIn: string;
+  checkOut: string;
+  nights: number;
+  pax: number;
+  rateId: string;
+  totalAmount: number;
+  depositAmount: number;
+  remainingBalance: number;
+  paymentStatus: PaymentStatus;
+  bookingStatus: BookingStatus;
+  paidDate: string;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BillplzSettings {
+  enabled: boolean;
+  apiKey: string;
+  xSignature: string;
+  collectionId: string;
+  mode: GatewayMode;
+}
+
+export interface SenangPaySettings {
+  enabled: boolean;
+  merchantId: string;
+  secretKey: string;
+}
+
+export interface StripeSettings {
+  enabled: boolean;
+  publishableKey: string;
+  secretKey: string;
+}
+
+export interface PaymentGatewaySettings {
+  activeGateway: GatewayProvider;
+  billplz: BillplzSettings;
+  senangPay: SenangPaySettings;
+  stripe: StripeSettings;
+}
+
+export interface PaymentRules {
+  bookingTypes: BookingTypeOption[];
+  depositAmount: number;
+  depositPercentage: number;
+  autoCancelAfterHours: number;
+  refundable: boolean;
+}
+
+export interface AutomationSettings {
+  email: {
+    bookingConfirmation: boolean;
+    paymentSuccess: boolean;
+    reminderBeforeCheckIn: boolean;
+    balancePaymentReminder: boolean;
+  };
+  whatsapp: {
+    afterBooking: boolean;
+    afterPayment: boolean;
+    checkInReminder: boolean;
+  };
+  adminAlerts: {
+    newBooking: boolean;
+    paymentReceived: boolean;
+  };
+}
+
+export interface WhatsappTemplateSettings {
+  confirmationMessage: string;
+}
+
+export interface FutureModuleSettings {
+  promoCodes: boolean;
+  affiliateBookingAgent: boolean;
+  otaSync: boolean;
+  googleCalendarSync: boolean;
+}
+
 export interface SiteContent {
   siteConfig: SiteConfig;
   heroMedia: HeroMedia;
@@ -45,6 +136,12 @@ export interface SiteContent {
   roomTypes: RoomType[];
   stayRules: StayRules;
   bookingSettings: BookingSettings;
+  bookingOrders: BookingOrder[];
+  paymentGateway: PaymentGatewaySettings;
+  paymentRules: PaymentRules;
+  automationSettings: AutomationSettings;
+  whatsappTemplates: WhatsappTemplateSettings;
+  futureModules: FutureModuleSettings;
 }
 
 export const STORAGE_KEY = 'villa-kaseh-ain-site-content';
@@ -111,6 +208,122 @@ export const defaultSiteContent: SiteContent = {
   bookingSettings: {
     blockedDates: [],
   },
+  bookingOrders: [
+    {
+      id: 'VKA-1027',
+      guestName: 'Nur Aina',
+      phone: '60123456789',
+      email: 'aina@example.com',
+      checkIn: '2026-05-12',
+      checkOut: '2026-05-14',
+      nights: 2,
+      pax: 12,
+      rateId: 'weekend',
+      totalAmount: 4840,
+      depositAmount: 800,
+      remainingBalance: 4040,
+      paymentStatus: 'Deposit Paid',
+      bookingStatus: 'Confirmed',
+      paidDate: '2026-04-28',
+      notes: 'Request early check-in if possible.',
+      createdAt: '2026-04-22T09:00:00.000Z',
+      updatedAt: '2026-04-28T09:00:00.000Z',
+    },
+    {
+      id: 'VKA-1028',
+      guestName: 'Farhan Hakim',
+      phone: '60199887766',
+      email: 'farhan@example.com',
+      checkIn: '2026-05-18',
+      checkOut: '2026-05-19',
+      nights: 1,
+      pax: 8,
+      rateId: 'weekday',
+      totalAmount: 1690,
+      depositAmount: 500,
+      remainingBalance: 1190,
+      paymentStatus: 'Pending',
+      bookingStatus: 'Awaiting Payment',
+      paidDate: '',
+      notes: '',
+      createdAt: '2026-04-26T12:00:00.000Z',
+      updatedAt: '2026-04-26T12:00:00.000Z',
+    },
+    {
+      id: 'VKA-1029',
+      guestName: 'Sofia Rahman',
+      phone: '60111112222',
+      email: 'sofia@example.com',
+      checkIn: '2026-04-05',
+      checkOut: '2026-04-07',
+      nights: 2,
+      pax: 20,
+      rateId: 'event',
+      totalAmount: 6200,
+      depositAmount: 1000,
+      remainingBalance: 0,
+      paymentStatus: 'Paid Full',
+      bookingStatus: 'Completed',
+      paidDate: '2026-04-01',
+      notes: 'Completed private event booking.',
+      createdAt: '2026-03-18T08:00:00.000Z',
+      updatedAt: '2026-04-07T08:00:00.000Z',
+    },
+  ],
+  paymentGateway: {
+    activeGateway: 'billplz',
+    billplz: {
+      enabled: true,
+      apiKey: '',
+      xSignature: '',
+      collectionId: '',
+      mode: 'Sandbox',
+    },
+    senangPay: {
+      enabled: false,
+      merchantId: '',
+      secretKey: '',
+    },
+    stripe: {
+      enabled: false,
+      publishableKey: '',
+      secretKey: '',
+    },
+  },
+  paymentRules: {
+    bookingTypes: ['Deposit Only', 'Full Payment'],
+    depositAmount: 500,
+    depositPercentage: 30,
+    autoCancelAfterHours: 12,
+    refundable: true,
+  },
+  automationSettings: {
+    email: {
+      bookingConfirmation: true,
+      paymentSuccess: true,
+      reminderBeforeCheckIn: true,
+      balancePaymentReminder: true,
+    },
+    whatsapp: {
+      afterBooking: true,
+      afterPayment: true,
+      checkInReminder: true,
+    },
+    adminAlerts: {
+      newBooking: true,
+      paymentReceived: true,
+    },
+  },
+  whatsappTemplates: {
+    confirmationMessage:
+      'Hi {name},\nTerima kasih kerana booking Villa Kaseh Ain.\n\nTarikh:\n{checkin} - {checkout}\n\nJumlah:\nRM {amount}\n\nKami akan hubungi anda segera.',
+  },
+  futureModules: {
+    promoCodes: false,
+    affiliateBookingAgent: false,
+    otaSync: false,
+    googleCalendarSync: false,
+  },
 };
 
 function uniqueSortedDates(dates: string[]) {
@@ -149,6 +362,76 @@ export function normalizeSiteContent(input?: Partial<SiteContent> | null): SiteC
     },
     bookingSettings: {
       blockedDates: uniqueSortedDates(input?.bookingSettings?.blockedDates ?? defaultSiteContent.bookingSettings.blockedDates),
+    },
+    bookingOrders: Array.isArray(input?.bookingOrders)
+      ? input.bookingOrders.map((order) => ({
+          id: order.id || `VKA-${Date.now()}`,
+          guestName: order.guestName || '',
+          phone: order.phone || '',
+          email: order.email || '',
+          checkIn: order.checkIn || '',
+          checkOut: order.checkOut || '',
+          nights: Number(order.nights) || 0,
+          pax: Number(order.pax) || 0,
+          rateId: order.rateId || defaultSiteContent.roomTypes[0].id,
+          totalAmount: Number(order.totalAmount) || 0,
+          depositAmount: Number(order.depositAmount) || 0,
+          remainingBalance: Number(order.remainingBalance) || 0,
+          paymentStatus: order.paymentStatus || 'Pending',
+          bookingStatus: order.bookingStatus || 'Awaiting Payment',
+          paidDate: order.paidDate || '',
+          notes: order.notes || '',
+          createdAt: order.createdAt || new Date().toISOString(),
+          updatedAt: order.updatedAt || new Date().toISOString(),
+        }))
+      : defaultSiteContent.bookingOrders,
+    paymentGateway: {
+      activeGateway: input?.paymentGateway?.activeGateway ?? defaultSiteContent.paymentGateway.activeGateway,
+      billplz: {
+        ...defaultSiteContent.paymentGateway.billplz,
+        ...input?.paymentGateway?.billplz,
+      },
+      senangPay: {
+        ...defaultSiteContent.paymentGateway.senangPay,
+        ...input?.paymentGateway?.senangPay,
+      },
+      stripe: {
+        ...defaultSiteContent.paymentGateway.stripe,
+        ...input?.paymentGateway?.stripe,
+      },
+    },
+    paymentRules: {
+      ...defaultSiteContent.paymentRules,
+      ...input?.paymentRules,
+      bookingTypes: input?.paymentRules?.bookingTypes?.length
+        ? input.paymentRules.bookingTypes
+        : defaultSiteContent.paymentRules.bookingTypes,
+      depositAmount: Number(input?.paymentRules?.depositAmount ?? defaultSiteContent.paymentRules.depositAmount),
+      depositPercentage: Number(input?.paymentRules?.depositPercentage ?? defaultSiteContent.paymentRules.depositPercentage),
+      autoCancelAfterHours: Number(input?.paymentRules?.autoCancelAfterHours ?? defaultSiteContent.paymentRules.autoCancelAfterHours),
+      refundable: Boolean(input?.paymentRules?.refundable ?? defaultSiteContent.paymentRules.refundable),
+    },
+    automationSettings: {
+      email: {
+        ...defaultSiteContent.automationSettings.email,
+        ...input?.automationSettings?.email,
+      },
+      whatsapp: {
+        ...defaultSiteContent.automationSettings.whatsapp,
+        ...input?.automationSettings?.whatsapp,
+      },
+      adminAlerts: {
+        ...defaultSiteContent.automationSettings.adminAlerts,
+        ...input?.automationSettings?.adminAlerts,
+      },
+    },
+    whatsappTemplates: {
+      ...defaultSiteContent.whatsappTemplates,
+      ...input?.whatsappTemplates,
+    },
+    futureModules: {
+      ...defaultSiteContent.futureModules,
+      ...input?.futureModules,
     },
   };
 }
