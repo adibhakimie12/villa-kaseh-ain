@@ -236,6 +236,7 @@ export function BookingPage() {
                       const availability = getAvailabilityStateForDate(isoDate, content.bookingOrders, blockedDates);
                       const isPast = isoDate < today;
                       const isSelected = isoDate === checkIn || isoDate === checkOut;
+                      const isUnavailable = availability.state !== 'available';
                       return (
                         <button
                           type="button"
@@ -245,14 +246,10 @@ export function BookingPage() {
                           className={`flex aspect-square items-center justify-center rounded-2xl text-sm ${
                             !isCurrentMonth
                               ? 'bg-transparent text-stone-300'
-                              : availability.state === 'booked'
-                                ? 'bg-[#f8dede] font-semibold text-[#a14646]'
-                                : availability.state === 'pending'
-                                  ? 'bg-[#fff0bd] font-semibold text-[#8b6b19]'
-                                  : availability.state === 'blocked'
-                                    ? 'bg-stone-300 font-semibold text-stone-600'
-                                : isSelected
+                              : isSelected
                                   ? 'bg-primary font-semibold text-white'
+                                  : isUnavailable
+                                    ? 'bg-[#f8dede] font-semibold text-[#a14646]'
                                   : 'lux-inset text-on-surface'
                           } ${isPast ? 'opacity-45' : ''} ${isCurrentMonth && availability.state === 'available' && !isPast ? 'cursor-pointer transition hover:ring-2 hover:ring-primary/30' : 'cursor-not-allowed'}`}
                         >
@@ -274,24 +271,22 @@ export function BookingPage() {
               </span>
               <span className="inline-flex items-center gap-2 text-on-surface-variant">
                 <span className="h-3 w-3 rounded-full bg-[#f8dede]" />
-                Booked
-              </span>
-              <span className="inline-flex items-center gap-2 text-on-surface-variant">
-                <span className="h-3 w-3 rounded-full bg-[#fff0bd]" />
-                Pending Payment
-              </span>
-              <span className="inline-flex items-center gap-2 text-on-surface-variant">
-                <span className="h-3 w-3 rounded-full bg-stone-300" />
-                Manual Blocked
+                Unavailable
               </span>
             </div>
             <div className="mt-4 flex flex-wrap gap-3">
-              {blockedDates.length ? (
-                blockedDates.slice(0, 12).map((date) => (
+              {content.bookingOrders.length || blockedDates.length ? (
+                [...new Set([
+                  ...content.bookingOrders.flatMap((order) => eachNightInStay(order.checkIn, order.checkOut)),
+                  ...blockedDates,
+                ])]
+                  .sort()
+                  .slice(0, 12)
+                  .map((date) => (
                   <span key={date} className="rounded-full bg-[#f5d8d8] px-4 py-2 text-sm text-[#8f3b3b]">
                     {formatLongDate(date)}
                   </span>
-                ))
+                  ))
               ) : (
                 <p className="text-sm text-on-surface-variant">Buat masa ini semua tarikh masih available.</p>
               )}
