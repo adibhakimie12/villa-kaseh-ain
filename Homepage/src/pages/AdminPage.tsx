@@ -4,7 +4,6 @@ import {
   Bell,
   CalendarDays,
   CreditCard,
-  Edit3,
   Eye,
   Lock,
   LogOut,
@@ -214,8 +213,10 @@ export function AdminPage() {
     [activeFilter, content.bookingOrders, today],
   );
   const metrics = useMemo(() => buildBookingMetrics(content.bookingOrders, today), [content.bookingOrders, today]);
-  const trend = useMemo(() => buildBookingTrend(content.bookingOrders, today), [content.bookingOrders, today]);
-  const trendMax = Math.max(...trend.map((item) => item.count), 1);
+  const last30DayBookings = useMemo(
+    () => buildBookingTrend(content.bookingOrders, today).reduce((sum, item) => sum + item.count, 0),
+    [content.bookingOrders, today],
+  );
 
   const blockedDateLabels = useMemo(
     () => blockedDates.map((date) => ({ date, label: formatLongDate(date) })),
@@ -473,7 +474,7 @@ export function AdminPage() {
             </div>
           </div>
 
-          <div className="mt-6 grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
+          <div className="mt-6 grid gap-6 xl:grid-cols-[1.35fr_0.65fr] xl:items-start">
             <div className="overflow-x-auto rounded-[1.5rem] border border-stone-200/80">
               <div className="hidden min-w-[1280px] grid-cols-[0.75fr_1fr_1fr_0.85fr_0.85fr_0.65fr_0.95fr_1.35fr_2fr] gap-4 bg-[#e8ded0] px-4 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-on-surface-variant lg:grid">
                 <span>Booking ID</span>
@@ -488,7 +489,7 @@ export function AdminPage() {
               </div>
               <div className="divide-y divide-stone-200/80">
                 {filteredBookings.map((order) => (
-                  <div key={order.id} className="grid gap-4 bg-[#f8f2e9] p-4 lg:min-w-[1280px] lg:grid-cols-[0.75fr_1fr_1fr_0.85fr_0.85fr_0.65fr_0.95fr_1.35fr_2fr] lg:items-center lg:gap-4">
+                  <div key={order.id} className="grid gap-3 bg-[#f8f2e9] p-3 lg:min-w-[1280px] lg:grid-cols-[0.75fr_1fr_1fr_0.85fr_0.85fr_0.65fr_0.95fr_1.35fr_2fr] lg:items-center lg:gap-4">
                     <button type="button" onClick={() => setSelectedBookingId(order.id)} className="text-left font-semibold text-primary">
                       {order.id}
                     </button>
@@ -505,33 +506,24 @@ export function AdminPage() {
                       <StatusChip value={order.paymentStatus} />
                       <StatusChip value={order.bookingStatus} />
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      <button type="button" onClick={() => setSelectedBookingId(order.id)} className="inline-flex min-h-11 items-center gap-1 rounded-full border border-stone-300 px-3 py-2 text-xs font-semibold">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <button type="button" onClick={() => setSelectedBookingId(order.id)} className="inline-flex min-h-9 items-center gap-1 rounded-full border border-stone-300 px-3 py-1.5 text-[11px] font-semibold">
                         <Eye size={13} /> View
                       </button>
-                      <button type="button" onClick={() => { setSelectedBookingId(order.id); setEditingBookingId(order.id); }} className="inline-flex min-h-11 items-center gap-1 rounded-full border border-stone-300 px-3 py-2 text-xs font-semibold">
-                        <Edit3 size={13} /> Edit
-                      </button>
-                      <button type="button" onClick={() => openWhatsApp(order)} className="inline-flex min-h-11 items-center gap-1 rounded-full border border-[#9ec8b7] px-3 py-2 text-xs font-semibold text-primary">
+                      <button type="button" onClick={() => openWhatsApp(order)} className="inline-flex min-h-9 items-center gap-1 rounded-full border border-[#9ec8b7] px-3 py-1.5 text-[11px] font-semibold text-primary">
                         <MessageCircle size={13} /> WhatsApp
-                      </button>
-                      <button type="button" onClick={() => openEmail(order)} className="inline-flex min-h-11 items-center gap-1 rounded-full border border-stone-300 px-3 py-2 text-xs font-semibold">
-                        <Mail size={13} /> Email
                       </button>
                       <button
                         type="button"
                         onClick={() => markManualPayment(order)}
                         disabled={order.paymentStatus === 'Paid Full'}
-                        className={`inline-flex min-h-11 items-center rounded-full px-3 py-2 text-xs font-semibold ${
+                        className={`inline-flex min-h-9 items-center rounded-full px-3 py-1.5 text-[11px] font-semibold ${
                           order.paymentStatus === 'Paid Full' ? 'cursor-not-allowed bg-stone-300 text-stone-600' : 'bg-primary text-white'
                         }`}
                       >
                         {getPaymentActionLabel(order)}
                       </button>
-                      <button type="button" onClick={() => rejectPayment(order)} className="inline-flex min-h-11 items-center rounded-full border border-[#d8aaa3] px-3 py-2 text-xs font-semibold text-[#9b3f35]">
-                        Reject Payment
-                      </button>
-                      <button type="button" onClick={() => cancelBooking(order)} className="inline-flex min-h-11 items-center rounded-full border border-[#d8aaa3] px-3 py-2 text-xs font-semibold text-[#9b3f35]">
+                      <button type="button" onClick={() => cancelBooking(order)} className="inline-flex min-h-9 items-center rounded-full border border-[#d8aaa3] px-3 py-1.5 text-[11px] font-semibold text-[#9b3f35]">
                         Cancel
                       </button>
                     </div>
@@ -548,18 +540,14 @@ export function AdminPage() {
                 <CalendarDays size={16} className="text-primary" />
                 <h3 className="font-headline text-2xl">Bookings Trend</h3>
               </div>
-              <div className="mt-6 flex h-40 items-end gap-1">
-                {trend.map((item) => (
-                  <div key={item.date} className="flex flex-1 flex-col items-center gap-2">
-                    <div
-                      className="w-full rounded-t-full bg-primary/70"
-                      style={{ height: `${Math.max((item.count / trendMax) * 100, item.count ? 12 : 4)}%` }}
-                      title={`${item.date}: ${item.count}`}
-                    />
-                  </div>
-                ))}
+              <p className="mt-3 text-sm leading-relaxed text-on-surface-variant">
+                Ringkasan berapa banyak booking baru masuk dalam 30 hari lepas.
+              </p>
+              <div className="mt-5 rounded-2xl border border-stone-200/80 bg-white/45 p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-on-surface-variant">Last 30 Days</p>
+                <p className="mt-2 font-headline text-4xl text-primary">{last30DayBookings}</p>
+                <p className="mt-1 text-sm text-on-surface-variant">new booking orders</p>
               </div>
-              <p className="mt-4 text-xs uppercase tracking-[0.18em] text-on-surface-variant">Last 30 days booking trend</p>
             </article>
           </div>
         </section>
@@ -1031,6 +1019,10 @@ export function AdminPage() {
               </button>
               <button type="button" onClick={() => openWhatsApp(selectedBooking)} className="inline-flex min-h-11 items-center rounded-full border border-stone-300 px-5 py-3 text-xs font-bold uppercase tracking-[0.16em]">
                 Send Reminder
+              </button>
+              <button type="button" onClick={() => openEmail(selectedBooking)} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-stone-300 px-5 py-3 text-xs font-bold uppercase tracking-[0.16em]">
+                <Mail size={14} />
+                Send Email
               </button>
               <button type="button" onClick={() => openWhatsApp(selectedBooking)} className="inline-flex min-h-11 items-center rounded-full border border-stone-300 px-5 py-3 text-xs font-bold uppercase tracking-[0.16em]">
                 Request Balance
