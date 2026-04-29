@@ -50,10 +50,15 @@ Website sekarang menyokong 2 mode:
 
 1. Buat project baru di Supabase
 2. Dalam SQL Editor, run fail [supabase/setup.sql](./supabase/setup.sql)
-3. Tukar email dalam polisi SQL kepada email admin sebenar
-4. Cipta user admin dalam Supabase Auth
+3. Cipta user admin dalam Supabase Auth
+4. Set `app_metadata.role = admin` untuk user yang patut jadi admin
 5. Isi `VITE_SUPABASE_URL` dan `VITE_SUPABASE_ANON_KEY` dalam `.env`
 6. Login di `/adminvka` guna email + password Supabase
+
+Untuk tambah admin lain kemudian:
+- cipta atau invite user baru dalam Supabase Auth
+- set `app_metadata.role = admin`
+- tak perlu edit polisi SQL lagi
 
 Selepas itu:
 - visitor biasa boleh baca content public dari Supabase

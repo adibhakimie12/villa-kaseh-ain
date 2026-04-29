@@ -116,7 +116,7 @@ function AdminLoginCard() {
             </form>
 
             <form className="space-y-4 rounded-[1.75rem] border border-stone-200/80 p-5" onSubmit={handleSupabaseLogin}>
-              <p className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Supabase Admin Login</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Admin Login</p>
               <label className="block">
                 <span className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Email</span>
                 <input
@@ -125,7 +125,7 @@ function AdminLoginCard() {
                   onChange={(event) => setEmail(event.target.value)}
                   className="lux-inset mt-2 w-full rounded-2xl px-4 py-4 text-sm outline-none"
                   placeholder="admin@email.com"
-                  disabled={!canUseSupabase || isLoading}
+                  disabled={isLoading}
                 />
               </label>
               <label className="block">
@@ -136,22 +136,22 @@ function AdminLoginCard() {
                   onChange={(event) => setPassword(event.target.value)}
                   className="lux-inset mt-2 w-full rounded-2xl px-4 py-4 text-sm outline-none"
                   placeholder="Password"
-                  disabled={!canUseSupabase || isLoading}
+                  disabled={isLoading}
                 />
               </label>
               <button
                 type="submit"
-                disabled={!canUseSupabase || isLoading}
+                disabled={isLoading}
                 className={`inline-flex min-h-11 items-center justify-center rounded-full px-6 py-4 text-xs font-bold uppercase tracking-[0.2em] ${
-                  canUseSupabase && !isLoading ? 'bg-[#22312d] text-white' : 'bg-stone-300 text-stone-500'
+                  !isLoading ? 'bg-[#22312d] text-white' : 'bg-stone-300 text-stone-500'
                 }`}
               >
-                {isLoading ? 'Signing In...' : 'Login with Supabase'}
+                {isLoading ? 'Signing In...' : 'Login Admin'}
               </button>
               <p className="text-xs text-on-surface-variant">
                 {canUseSupabase
-                  ? 'Guna account Supabase Auth yang dibenarkan dalam polisi SQL.'
-                  : 'Isi env Supabase dulu untuk aktifkan mode sync merentas device.'}
+                  ? 'Gunakan email dan password admin yang telah didaftarkan.'
+                  : 'Login admin belum aktif pada build ini. Isi env Vercel dan redeploy untuk aktifkan sync.'}
               </p>
             </form>
           </div>

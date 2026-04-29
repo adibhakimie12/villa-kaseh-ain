@@ -6,24 +6,30 @@ create table if not exists public.site_content (
 
 alter table public.site_content enable row level security;
 
+drop policy if exists "public can read site content" on public.site_content;
 create policy "public can read site content"
 on public.site_content
 for select
 to anon, authenticated
 using (true);
 
-create policy "allowed admin email can insert site content"
+drop policy if exists "allowed admin email can insert site content" on public.site_content;
+create policy "users with admin role can insert site content"
 on public.site_content
 for insert
 to authenticated
-with check ((auth.jwt() ->> 'email') = 'your-admin@email.com');
+with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 
-create policy "allowed admin email can update site content"
+drop policy if exists "allowed admin email can update site content" on public.site_content;
+create policy "users with admin role can update site content"
 on public.site_content
 for update
 to authenticated
-using ((auth.jwt() ->> 'email') = 'your-admin@email.com')
-with check ((auth.jwt() ->> 'email') = 'your-admin@email.com');
+using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin')
+with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+
+comment on table public.site_content is
+'Admin write access requires Supabase Auth users with app_metadata.role = admin.';
 
 insert into public.site_content (slug, content)
 values (
