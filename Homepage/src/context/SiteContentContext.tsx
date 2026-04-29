@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import {
   ADMIN_PASSCODE,
   ADMIN_SESSION_KEY,
@@ -39,7 +40,7 @@ interface SiteContentContextValue {
 
 const SiteContentContext = createContext<SiteContentContextValue | null>(null);
 
-export function SiteContentProvider({ children }: { children: React.ReactNode }) {
+export function SiteContentProvider({ children }: { children: ReactNode }) {
   const [content, setContent] = useState<SiteContent>(() => loadSiteContent());
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(() => {
     if (typeof window === 'undefined') return false;
