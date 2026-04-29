@@ -60,6 +60,18 @@ Untuk tambah admin lain kemudian:
 - set `app_metadata.role = admin`
 - tak perlu edit polisi SQL lagi
 
+Query cepat untuk jadikan user admin:
+```sql
+update auth.users
+set raw_app_meta_data = jsonb_set(
+  coalesce(raw_app_meta_data, '{}'::jsonb),
+  '{role}',
+  '"admin"'::jsonb,
+  true
+)
+where email = 'emailbaru@example.com';
+```
+
 Selepas itu:
 - visitor biasa boleh baca content public dari Supabase
 - admin yang sah boleh update content dan blocked dates
