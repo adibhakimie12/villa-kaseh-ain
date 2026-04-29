@@ -273,19 +273,6 @@ export function BookingPage() {
             ))}
           </div>
 
-          <div className="mt-4 rounded-[1.5rem] border border-[#d9c9b4] bg-white/50 p-4 text-sm text-on-surface-variant">
-            <p className="text-xs uppercase tracking-[0.2em] text-primary">Auto-applied rate</p>
-            <p className="mt-2 font-headline text-2xl text-on-surface">{selectedRate.label}</p>
-            <p className="mt-1">
-              {nights > 0
-                ? `${getRoomRatePriceCaption(selectedRate)} selected based on your stay dates.`
-                : 'Pilih tarikh dahulu untuk sistem kira rate yang sesuai.'}
-            </p>
-            {selectedRate.pricingType === 'package' && nights > 0 ? (
-              <p className="mt-2 font-semibold text-primary">Package {selectedRate.packageNights} malam dipakai secara automatik.</p>
-            ) : null}
-          </div>
-
           {nights > 0 && content.bookingSettings.publicHolidayDates.some((date) => eachNightInStay(checkIn, checkOut).includes(date)) ? (
             <div className="mt-4 rounded-[1.5rem] border border-[#ead38f] bg-[#fff7d7] p-4 text-sm text-[#7a6016]">
               Tarikh pilihan termasuk cuti umum Malaysia, jadi rate Hujung Minggu / Cuti dipakai.
