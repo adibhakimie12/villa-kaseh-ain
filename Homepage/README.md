@@ -53,7 +53,7 @@ Website sekarang menyokong 2 mode:
 3. Tukar email dalam polisi SQL kepada email admin sebenar
 4. Cipta user admin dalam Supabase Auth
 5. Isi `VITE_SUPABASE_URL` dan `VITE_SUPABASE_ANON_KEY` dalam `.env`
-6. Login di `/admin` guna email + password Supabase
+6. Login di `/adminvka` guna email + password Supabase
 
 Selepas itu:
 - visitor biasa boleh baca content public dari Supabase

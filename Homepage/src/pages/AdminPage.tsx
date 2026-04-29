@@ -14,6 +14,7 @@ import {
   RefreshCw,
   RotateCcw,
   Save,
+  SlidersHorizontal,
   Settings,
   Trash2,
   X,
@@ -203,6 +204,7 @@ export function AdminPage() {
   const [selectedBookingId, setSelectedBookingId] = useState(content.bookingOrders[0]?.id ?? '');
   const [calendarAnchor, setCalendarAnchor] = useState(() => new Date());
   const [editingBookingId, setEditingBookingId] = useState('');
+  const [adminView, setAdminView] = useState<'dashboard' | 'settings'>('dashboard');
 
   const today = toIsoDate(new Date());
   const blockedDates = content.bookingSettings.blockedDates;
@@ -406,6 +408,14 @@ export function AdminPage() {
             <div className="flex flex-wrap gap-3">
               <button
                 type="button"
+                onClick={() => setAdminView(adminView === 'dashboard' ? 'settings' : 'dashboard')}
+                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-stone-300 px-5 py-3 text-xs font-bold uppercase tracking-[0.18em] text-on-surface"
+              >
+                {adminView === 'dashboard' ? <Settings size={14} /> : <SlidersHorizontal size={14} />}
+                {adminView === 'dashboard' ? 'Settings' : 'Dashboard'}
+              </button>
+              <button
+                type="button"
                 onClick={handleRefresh}
                 className="inline-flex min-h-11 items-center gap-2 rounded-full border border-stone-300 px-5 py-3 text-xs font-bold uppercase tracking-[0.18em] text-on-surface"
               >
@@ -432,7 +442,7 @@ export function AdminPage() {
           </div>
         </section>
 
-        <section className="grid gap-4 md:grid-cols-5">
+        <section className={`grid gap-4 md:grid-cols-5 ${adminView === 'dashboard' ? '' : 'hidden'}`}>
           {metricCards.map((card) => (
             <article key={card.label} className="lux-surface-soft rounded-[1.5rem] p-5">
               <p className="text-xs uppercase tracking-[0.18em] text-on-surface-variant">{card.label}</p>
@@ -441,7 +451,7 @@ export function AdminPage() {
           ))}
         </section>
 
-        <section className="lux-surface rounded-[2rem] p-6 md:p-8">
+        <section className={`lux-surface rounded-[2rem] p-6 md:p-8 ${adminView === 'dashboard' ? '' : 'hidden'}`}>
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-xs uppercase tracking-[0.3em] text-primary">Booking Management</p>
@@ -554,7 +564,7 @@ export function AdminPage() {
           </div>
         </section>
 
-        <section className="grid gap-8 xl:grid-cols-[1.05fr_0.95fr]">
+        <section className={`grid gap-8 xl:grid-cols-[1.05fr_0.95fr] ${adminView === 'dashboard' ? '' : 'hidden'}`}>
           <article className="lux-surface rounded-[2rem] p-6 md:p-8">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
@@ -650,7 +660,7 @@ export function AdminPage() {
           </div>
         </section>
 
-        <section className="grid gap-8 xl:grid-cols-3">
+        <section className={`grid gap-8 xl:grid-cols-3 ${adminView === 'settings' ? '' : 'hidden'}`}>
           <article className="lux-surface rounded-[2rem] p-6 md:p-8">
             <div className="flex items-center gap-2">
               <CreditCard size={16} className="text-primary" />
@@ -869,7 +879,7 @@ export function AdminPage() {
         </section>
 
         <section className="grid gap-8 lg:grid-cols-[1fr_1fr]">
-          <article className="lux-surface rounded-[2rem] p-6 md:p-8">
+          <article className={`lux-surface rounded-[2rem] p-6 md:p-8 ${adminView === 'settings' ? '' : 'hidden'}`}>
             <h2 className="font-headline text-2xl">WhatsApp Template Settings</h2>
             <label className="mt-6 block">
               <FieldLabel>Default Confirmation Message</FieldLabel>
@@ -891,7 +901,7 @@ export function AdminPage() {
             </div>
           </article>
 
-          <article className="lux-surface rounded-[2rem] p-6 md:p-8">
+          <article className={`lux-surface rounded-[2rem] p-6 md:p-8 ${adminView === 'dashboard' ? '' : 'hidden'}`}>
             <div className="flex items-center gap-2">
               <Save size={16} className="text-primary" />
               <h2 className="font-headline text-2xl">Basic Content</h2>
@@ -929,7 +939,7 @@ export function AdminPage() {
           </article>
         </section>
 
-        <section className="lux-surface rounded-[2rem] p-6 md:p-8">
+        <section className={`lux-surface rounded-[2rem] p-6 md:p-8 ${adminView === 'dashboard' ? '' : 'hidden'}`}>
           <h2 className="font-headline text-2xl">Rates</h2>
           <div className="mt-6 grid gap-4 md:grid-cols-3">
             {content.roomTypes.map((room) => (

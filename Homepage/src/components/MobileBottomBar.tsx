@@ -1,5 +1,6 @@
 import { MessageCircle } from 'lucide-react';
 import { useSiteContent } from '../context/SiteContentContext';
+import { ADMIN_ROUTE } from '../lib/routes';
 
 interface MobileBottomBarProps {
   onNavigate: (path: string) => void;
@@ -9,7 +10,7 @@ interface MobileBottomBarProps {
 export function MobileBottomBar({ onNavigate, pathname }: MobileBottomBarProps) {
   const { whatsappUrl } = useSiteContent();
 
-  if (pathname === '/admin') {
+  if (pathname === ADMIN_ROUTE) {
     return null;
   }
 

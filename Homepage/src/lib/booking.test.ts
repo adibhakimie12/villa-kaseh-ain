@@ -10,6 +10,7 @@ import {
   verifyManualPayment,
 } from './booking';
 import { defaultSiteContent, normalizeSiteContent, type BookingOrder, type ManualPaymentSettings, type PaymentRules } from './siteContent';
+import { ADMIN_ROUTE, normalizePath } from './routes';
 
 const orders: BookingOrder[] = [
   {
@@ -176,5 +177,9 @@ const paymentMessage = buildCustomerPaymentWhatsappMessage(orders[1], manualPaym
 assert.ok(paymentMessage.includes('VKA-1002'));
 assert.ok(paymentMessage.includes('RM 500'));
 assert.ok(paymentMessage.includes('Maybank'));
+
+assert.equal(ADMIN_ROUTE, '/adminvka');
+assert.equal(normalizePath('/adminvka'), '/adminvka');
+assert.equal(normalizePath('/admin'), '/');
 
 console.log('booking helper tests passed');

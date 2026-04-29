@@ -4,17 +4,11 @@ import { MobileBottomBar } from './components/MobileBottomBar';
 import { SiteFooter } from './components/SiteFooter';
 import { SiteHeader } from './components/SiteHeader';
 import { SiteContentProvider } from './context/SiteContentContext';
+import { ADMIN_ROUTE, normalizePath } from './lib/routes';
 import { AdminPage } from './pages/AdminPage';
 import { BookingPage } from './pages/BookingPage';
 import { ContactPage } from './pages/ContactPage';
 import { HomePage } from './pages/HomePage';
-
-function normalizePath(pathname: string) {
-  if (pathname === '/' || pathname === '/booking' || pathname === '/contact' || pathname === '/admin') {
-    return pathname;
-  }
-  return '/';
-}
 
 export default function App() {
   const [pathname, setPathname] = useState(() => normalizePath(window.location.pathname));
@@ -48,7 +42,7 @@ export default function App() {
         {pathname === '/' && <HomePage onNavigate={navigate} />}
         {pathname === '/booking' && <BookingPage />}
         {pathname === '/contact' && <ContactPage />}
-        {pathname === '/admin' && <AdminPage />}
+        {pathname === ADMIN_ROUTE && <AdminPage />}
         {showFirstVisitPopup && <FirstVisitPopup onClose={closeFirstVisitPopup} onNavigate={navigate} />}
         <SiteFooter />
         <MobileBottomBar pathname={pathname} onNavigate={navigate} />
