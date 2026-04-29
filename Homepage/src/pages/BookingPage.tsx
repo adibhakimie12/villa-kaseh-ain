@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CalendarDays, Users, CheckCircle2, CreditCard, MessageCircle } from 'lucide-react';
+import { CalendarDays, Users, CheckCircle2, CreditCard, MessageCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useSiteContent } from '../context/SiteContentContext';
 import { eachNightInStay, formatLongDate, monthMatrix, toIsoDate } from '../lib/date';
 import { buildNotificationRequest, sendNotificationRequest } from '../lib/notifications';
@@ -29,6 +29,7 @@ export function BookingPage() {
   const [notes, setNotes] = useState('');
   const [submittedOrder, setSubmittedOrder] = useState<BookingOrder | null>(null);
   const [paymentOptionSelected, setPaymentOptionSelected] = useState<PaymentOptionSelected>('Deposit');
+  const [calendarOffset, setCalendarOffset] = useState(0);
 
   const blockedDates = content.bookingSettings.blockedDates;
 
@@ -143,7 +144,13 @@ export function BookingPage() {
   };
 
   const today = toIsoDate(new Date());
-  const calendarAnchors = [new Date(), new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1)];
+  const calendarAnchors = useMemo(() => {
+    const baseDate = new Date();
+    return [
+      new Date(baseDate.getFullYear(), baseDate.getMonth() + calendarOffset, 1),
+      new Date(baseDate.getFullYear(), baseDate.getMonth() + calendarOffset + 1, 1),
+    ];
+  }, [calendarOffset]);
 
   const handleCalendarDateClick = (isoDate: string, isAvailable: boolean, isCurrentMonth: boolean) => {
     if (!isAvailable || !isCurrentMonth || isoDate < today) return;
@@ -214,6 +221,35 @@ export function BookingPage() {
           </div>
 
           <div className="mt-8 grid gap-5 xl:grid-cols-2">
+            <div className="xl:col-span-2 flex flex-wrap items-center justify-between gap-3 rounded-[1.5rem] border border-stone-200/80 bg-white/45 px-4 py-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Browse More Dates</p>
+                <p className="mt-1 text-sm text-on-surface-variant">Semak bulan semasa atau gerak ke bulan seterusnya untuk cari tarikh sesuai.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCalendarOffset((current) => Math.max(current - 1, 0))}
+                  disabled={calendarOffset === 0}
+                  className={`inline-flex min-h-11 items-center gap-2 rounded-full px-4 py-3 text-xs font-bold uppercase tracking-[0.18em] ${
+                    calendarOffset === 0
+                      ? 'cursor-not-allowed bg-stone-200 text-stone-500'
+                      : 'border border-stone-300 text-on-surface'
+                  }`}
+                >
+                  <ChevronLeft size={14} />
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCalendarOffset((current) => current + 1)}
+                  className="inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-4 py-3 text-xs font-bold uppercase tracking-[0.18em] text-white"
+                >
+                  Next
+                  <ChevronRight size={14} />
+                </button>
+              </div>
+            </div>
             {calendarAnchors.map((anchor) => {
               const days = monthMatrix(anchor);
               return (
