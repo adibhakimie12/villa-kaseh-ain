@@ -23,6 +23,7 @@ import { eachDateInRange, formatLongDate, monthMatrix, toIsoDate } from '../lib/
 import { buildNotificationRequest, sendNotificationRequest } from '../lib/notifications';
 import {
   BookingFilter,
+  buildPaymentLink,
   buildBookingEmailBody,
   buildBookingMetrics,
   buildBookingTrend,
@@ -203,7 +204,6 @@ export function AdminPage() {
   const [activeFilter, setActiveFilter] = useState<BookingFilter>('Upcoming');
   const [selectedBookingId, setSelectedBookingId] = useState(content.bookingOrders[0]?.id ?? '');
   const [calendarAnchor, setCalendarAnchor] = useState(() => new Date());
-  const [editingBookingId, setEditingBookingId] = useState('');
   const [adminView, setAdminView] = useState<'dashboard' | 'settings'>('dashboard');
 
   const today = toIsoDate(new Date());
@@ -381,6 +381,62 @@ export function AdminPage() {
     const subject = `Villa Kaseh Ain Booking ${order.id}`;
     const body = buildBookingEmailBody(order, content.manualPayment);
     window.open(`mailto:${order.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+  };
+
+  const openBalanceRequest = (order: BookingOrder) => {
+    const message = [
+      `Hi ${order.guestName},`,
+      `Ini reminder baki booking anda untuk ${order.id}.`,
+      `Tarikh: ${order.checkIn} - ${order.checkOut}`,
+      `Baki semasa: RM ${order.remainingBalance.toLocaleString()}`,
+      `Bank: ${content.manualPayment.bankName}`,
+      `Nama Akaun: ${content.manualPayment.accountHolderName}`,
+      `No Akaun: ${content.manualPayment.accountNumber}`,
+      'Sila hantar bukti bayaran selepas transfer.',
+    ].join('\n');
+
+    window.open(`https://wa.me/${order.phone}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleTestPayment = () => {
+    if (!selectedBooking) {
+      window.alert('Pilih booking dulu untuk test payment link.');
+      return;
+    }
+
+    if (content.paymentGateway.activeGateway === 'manual' || !content.manualPayment.enabled) {
+      window.alert(
+        [
+          `Manual payment aktif untuk ${selectedBooking.id}.`,
+          `Bank: ${content.manualPayment.bankName}`,
+          `Nama Akaun: ${content.manualPayment.accountHolderName}`,
+          `No Akaun: ${content.manualPayment.accountNumber}`,
+          'Customer perlu transfer manual dan upload receipt.',
+        ].join('\n'),
+      );
+      return;
+    }
+
+    if (content.paymentGateway.activeGateway === 'billplz' && !content.paymentGateway.billplz.enabled) {
+      window.alert('Billplz belum diaktifkan. Guna manual transfer atau hidupkan gateway dulu.');
+      return;
+    }
+
+    if (content.paymentGateway.activeGateway === 'senangPay' && !content.paymentGateway.senangPay.enabled) {
+      window.alert('senangPay belum diaktifkan. Guna manual transfer atau hidupkan gateway dulu.');
+      return;
+    }
+
+    if (content.paymentGateway.activeGateway === 'stripe' && !content.paymentGateway.stripe.enabled) {
+      window.alert('Stripe belum diaktifkan. Guna manual transfer atau hidupkan gateway dulu.');
+      return;
+    }
+
+    window.open(buildPaymentLink(selectedBooking, content.paymentGateway.activeGateway), '_blank', 'noopener,noreferrer');
+  };
+
+  const handleSaveTemplate = () => {
+    window.alert('Template WhatsApp disimpan automatik bila anda menaip.');
   };
 
   const metricCards = [
@@ -773,7 +829,7 @@ export function AdminPage() {
                 <span className="text-sm font-semibold">Refundable</span>
                 <input type="checkbox" checked={content.paymentRules.refundable} onChange={(event) => updatePaymentRule('refundable', event.target.checked)} />
               </label>
-              <button type="button" className="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-primary px-6 py-4 text-xs font-bold uppercase tracking-[0.2em] text-white">
+              <button type="button" onClick={handleTestPayment} className="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-primary px-6 py-4 text-xs font-bold uppercase tracking-[0.2em] text-white">
                 Test Payment
               </button>
             </div>
@@ -881,7 +937,7 @@ export function AdminPage() {
               />
             </label>
             <div className="mt-4 flex flex-wrap gap-3">
-              <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-6 py-4 text-xs font-bold uppercase tracking-[0.2em] text-white">
+              <button type="button" onClick={handleSaveTemplate} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-6 py-4 text-xs font-bold uppercase tracking-[0.2em] text-white">
                 <Save size={14} />
                 Save Template
               </button>
@@ -951,7 +1007,7 @@ export function AdminPage() {
                 <p className="text-xs uppercase tracking-[0.3em] text-primary">Booking Detail</p>
                 <h2 className="mt-2 font-headline text-3xl">{selectedBooking.id}</h2>
               </div>
-              <button type="button" onClick={() => { setSelectedBookingId(''); setEditingBookingId(''); }} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-stone-300">
+              <button type="button" onClick={() => setSelectedBookingId('')} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-stone-300">
                 <X size={18} />
               </button>
             </div>
@@ -1009,9 +1065,8 @@ export function AdminPage() {
                 <h3 className="font-headline text-2xl">Notes</h3>
                 <textarea
                   value={selectedBooking.notes}
-                  disabled={editingBookingId !== selectedBooking.id}
                   onChange={(event) => updateBooking(selectedBooking.id, (order) => ({ ...order, notes: event.target.value, updatedAt: new Date().toISOString() }))}
-                  className="lux-inset mt-3 min-h-28 w-full rounded-2xl px-4 py-4 text-sm outline-none disabled:opacity-80"
+                  className="lux-inset mt-3 min-h-28 w-full rounded-2xl px-4 py-4 text-sm outline-none"
                 />
               </section>
             </div>
@@ -1027,7 +1082,7 @@ export function AdminPage() {
                 <Mail size={14} />
                 Send Email
               </button>
-              <button type="button" onClick={() => openWhatsApp(selectedBooking)} className="inline-flex min-h-11 items-center rounded-full border border-stone-300 px-5 py-3 text-xs font-bold uppercase tracking-[0.16em]">
+              <button type="button" onClick={() => openBalanceRequest(selectedBooking)} className="inline-flex min-h-11 items-center rounded-full border border-stone-300 px-5 py-3 text-xs font-bold uppercase tracking-[0.16em]">
                 Request Balance
               </button>
               <button
@@ -1046,7 +1101,7 @@ export function AdminPage() {
               <button type="button" onClick={() => updateBooking(selectedBooking.id, (order) => updateBookingStatus(order, 'Refunded', 'Cancelled'))} className="inline-flex min-h-11 items-center rounded-full border border-[#d8aaa3] px-5 py-3 text-xs font-bold uppercase tracking-[0.16em] text-[#9b3f35]">
                 Refund
               </button>
-              <button type="button" onClick={() => { setSelectedBookingId(''); setEditingBookingId(''); }} className="inline-flex min-h-11 items-center rounded-full border border-stone-300 px-5 py-3 text-xs font-bold uppercase tracking-[0.16em]">
+              <button type="button" onClick={() => setSelectedBookingId('')} className="inline-flex min-h-11 items-center rounded-full border border-stone-300 px-5 py-3 text-xs font-bold uppercase tracking-[0.16em]">
                 Close
               </button>
             </div>
