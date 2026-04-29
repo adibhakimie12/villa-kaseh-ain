@@ -10,7 +10,10 @@ import {
   getPublicGuestOptions,
   getAllowedPaymentOptions,
   getAvailabilityStateForDate,
+  getAutomaticRateForStay,
   getBookingBalance,
+  getPublicRoomRates,
+  getRoomRateSubtotal,
   selectBookingCalendarDate,
   renderBookingTemplate,
   verifyManualPayment,
@@ -131,6 +134,14 @@ assert.equal(getAvailabilityStateForDate('2026-05-15', orders, ['2026-05-20']).s
 assert.equal(getAvailabilityStateForDate('2026-05-20', orders, ['2026-05-20']).state, 'blocked');
 assert.equal(getAvailabilityStateForDate('2026-05-21', orders, ['2026-05-20']).state, 'available');
 assert.equal(getAvailabilityStateForDate('2026-05-15', [{ ...orders[1], bookingStatus: 'Cancelled' }], []).state, 'available');
+
+assert.deepEqual(getPublicRoomRates(defaultSiteContent.roomTypes).map((rate) => rate.id), ['mon-thu', 'thu-fri', 'weekend-1n']);
+assert.equal(getAutomaticRateForStay(defaultSiteContent.roomTypes, '2026-05-04', '2026-05-05').id, 'mon-thu');
+assert.equal(getAutomaticRateForStay(defaultSiteContent.roomTypes, '2026-05-07', '2026-05-08').id, 'thu-fri');
+assert.equal(getAutomaticRateForStay(defaultSiteContent.roomTypes, '2026-05-08', '2026-05-10').id, 'weekend-2n');
+assert.equal(getAutomaticRateForStay(defaultSiteContent.roomTypes, '2026-05-08', '2026-05-11').id, 'weekend-3n');
+assert.equal(getAutomaticRateForStay(defaultSiteContent.roomTypes, '2026-05-01', '2026-05-02', ['2026-05-01']).id, 'weekend-1n');
+assert.equal(getRoomRateSubtotal(defaultSiteContent.roomTypes.find((rate) => rate.id === 'weekend-2n')!, 2), 3800);
 
 assert.deepEqual(getBookingBalance(1800, rules), {
   depositAmount: 500,

@@ -224,6 +224,7 @@ export function AdminPage() {
 
   const today = toIsoDate(new Date());
   const blockedDates = content.bookingSettings.blockedDates;
+  const publicHolidayDates = content.bookingSettings.publicHolidayDates;
   const effectivePaymentGateway = getEffectivePaymentGateway(content);
   const selectedBooking = content.bookingOrders.find((order) => order.id === selectedBookingId) ?? null;
   const filteredBookings = useMemo(
@@ -239,6 +240,10 @@ export function AdminPage() {
   const blockedDateLabels = useMemo(
     () => blockedDates.map((date) => ({ date, label: formatLongDate(date) })),
     [blockedDates],
+  );
+  const publicHolidayDateLabels = useMemo(
+    () => publicHolidayDates.map((date) => ({ date, label: formatLongDate(date) })),
+    [publicHolidayDates],
   );
 
   useEffect(() => {
@@ -390,6 +395,7 @@ export function AdminPage() {
     updateContent((current) => ({
       ...current,
       bookingSettings: {
+        ...current.bookingSettings,
         blockedDates: [...current.bookingSettings.blockedDates, ...dates],
       },
     }));
@@ -401,7 +407,22 @@ export function AdminPage() {
     updateContent((current) => ({
       ...current,
       bookingSettings: {
+        ...current.bookingSettings,
         blockedDates: current.bookingSettings.blockedDates.filter((value) => value !== date),
+      },
+    }));
+  };
+
+  const updatePublicHolidayDates = (value: string) => {
+    updateContent((current) => ({
+      ...current,
+      bookingSettings: {
+        ...current.bookingSettings,
+        publicHolidayDates: value
+          .split('\n')
+          .map((date) => date.trim())
+          .filter(Boolean)
+          .sort((a, b) => a.localeCompare(b)),
       },
     }));
   };
@@ -746,6 +767,29 @@ export function AdminPage() {
                 ) : (
                   <p className="text-sm text-on-surface-variant">Belum ada blocked date lagi.</p>
                 )}
+              </div>
+            </article>
+
+            <article className="lux-surface rounded-[2rem] p-6 md:p-8">
+              <div className="flex items-center justify-between gap-4">
+                <h2 className="font-headline text-2xl">Public Holiday Rates</h2>
+                <p className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">{publicHolidayDates.length} dates</p>
+              </div>
+              <p className="mt-3 text-sm text-on-surface-variant">
+                Tarikh ini akan guna rate Hujung Minggu / Cuti walaupun jatuh pada hari biasa.
+              </p>
+              <textarea
+                value={publicHolidayDates.join('\n')}
+                onChange={(event) => updatePublicHolidayDates(event.target.value)}
+                className="lux-inset mt-4 min-h-40 w-full rounded-2xl px-4 py-4 text-sm outline-none"
+                placeholder="2026-02-17"
+              />
+              <div className="mt-4 flex max-h-36 flex-wrap gap-2 overflow-y-auto">
+                {publicHolidayDateLabels.map((item) => (
+                  <span key={item.date} className="rounded-full border border-[#ead38f] bg-[#fff7d7] px-3 py-1 text-xs text-[#7a6016]">
+                    {item.label}
+                  </span>
+                ))}
               </div>
             </article>
           </div>

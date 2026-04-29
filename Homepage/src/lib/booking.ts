@@ -40,6 +40,43 @@ export function getRoomRatePriceCaption(rate: RoomType) {
     : 'Per malam';
 }
 
+export function getPublicRoomRates(roomTypes: RoomType[]) {
+  return roomTypes.filter((rate) => rate.pricingType !== 'package');
+}
+
+function findRate(roomTypes: RoomType[], id: string, fallback?: RoomType) {
+  return roomTypes.find((rate) => rate.id === id) ?? fallback ?? roomTypes[0];
+}
+
+function isWeekendOrHolidayNight(date: string, publicHolidayDates: string[]) {
+  const day = new Date(`${date}T00:00:00`).getDay();
+  return day === 5 || day === 6 || publicHolidayDates.includes(date);
+}
+
+export function getAutomaticRateForStay(roomTypes: RoomType[], checkIn: string, checkOut: string, publicHolidayDates: string[] = []) {
+  const publicRates = getPublicRoomRates(roomTypes);
+  const fallback = publicRates[0] ?? roomTypes[0];
+  const nights = eachNightInStay(checkIn, checkOut);
+
+  if (!nights.length) {
+    return fallback;
+  }
+
+  const hasWeekendOrHoliday = nights.some((date) => isWeekendOrHolidayNight(date, publicHolidayDates));
+  if (hasWeekendOrHoliday) {
+    if (nights.length === 2) return findRate(roomTypes, 'weekend-2n', findRate(roomTypes, 'weekend-1n', fallback));
+    if (nights.length === 3) return findRate(roomTypes, 'weekend-3n', findRate(roomTypes, 'weekend-1n', fallback));
+    return findRate(roomTypes, 'weekend-1n', fallback);
+  }
+
+  const hasThursdayNight = nights.some((date) => new Date(`${date}T00:00:00`).getDay() === 4);
+  if (hasThursdayNight) {
+    return findRate(roomTypes, 'thu-fri', fallback);
+  }
+
+  return findRate(roomTypes, 'mon-thu', fallback);
+}
+
 export function selectBookingCalendarDate(input: { checkIn: string; checkOut: string; selectedDate: string }) {
   if (!input.checkIn || input.checkOut || input.selectedDate <= input.checkIn) {
     return {

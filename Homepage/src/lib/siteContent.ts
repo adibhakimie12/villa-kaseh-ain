@@ -46,6 +46,7 @@ export interface StayInformation {
 
 export interface BookingSettings {
   blockedDates: string[];
+  publicHolidayDates: string[];
 }
 
 export type PaymentStatus = 'Pending' | 'Deposit Paid' | 'Paid Full' | 'Failed' | 'Refunded' | 'Rejected';
@@ -303,6 +304,32 @@ export const defaultSiteContent: SiteContent = {
   },
   bookingSettings: {
     blockedDates: [],
+    publicHolidayDates: [
+      '2026-01-17',
+      '2026-01-18',
+      '2026-02-17',
+      '2026-02-18',
+      '2026-03-04',
+      '2026-03-07',
+      '2026-03-08',
+      '2026-03-20',
+      '2026-03-21',
+      '2026-03-22',
+      '2026-03-23',
+      '2026-04-26',
+      '2026-05-01',
+      '2026-05-26',
+      '2026-05-27',
+      '2026-05-28',
+      '2026-05-31',
+      '2026-06-01',
+      '2026-06-17',
+      '2026-08-25',
+      '2026-08-31',
+      '2026-09-16',
+      '2026-11-08',
+      '2026-12-25',
+    ],
   },
   bookingOrders: [],
   manualPayment: {
@@ -458,6 +485,7 @@ export function normalizeSiteContent(input?: Partial<SiteContent> | null): SiteC
     },
     bookingSettings: {
       blockedDates: uniqueSortedDates(input?.bookingSettings?.blockedDates ?? defaultSiteContent.bookingSettings.blockedDates),
+      publicHolidayDates: uniqueSortedDates(input?.bookingSettings?.publicHolidayDates ?? defaultSiteContent.bookingSettings.publicHolidayDates),
     },
     bookingOrders: Array.isArray(input?.bookingOrders)
       ? input.bookingOrders.map((order) => ({

@@ -10,10 +10,12 @@ import {
   getExtraGuestCharge,
   getAllowedPaymentOptions,
   getBookingBalance,
+  getAutomaticRateForStay,
   getPaymentDueNow,
   getRoomRatePriceCaption,
   getRoomRateSubtotal,
   getAvailabilityStateForDate,
+  getPublicRoomRates,
   getPublicGuestOptions,
   isRateSelectionValid,
   selectBookingCalendarDate,
@@ -25,7 +27,6 @@ export function BookingPage() {
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
   const [guestCount, setGuestCount] = useState(20);
-  const [selectedRate, setSelectedRate] = useState(content.roomTypes[0]);
   const [guestName, setGuestName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -43,6 +44,11 @@ export function BookingPage() {
 
   const nights = dayDiff(checkIn, checkOut);
   const guestOptions = useMemo(() => getPublicGuestOptions(), []);
+  const publicRoomRates = useMemo(() => getPublicRoomRates(content.roomTypes), [content.roomTypes]);
+  const selectedRate = useMemo(
+    () => getAutomaticRateForStay(content.roomTypes, checkIn, checkOut, content.bookingSettings.publicHolidayDates),
+    [checkIn, checkOut, content.bookingSettings.publicHolidayDates, content.roomTypes],
+  );
   const maxIncludedGuests = 25;
   const extraGuestRatePerPersonPerNight = 50;
   const extraGuests = Math.max(guestCount - maxIncludedGuests, 0);
@@ -70,7 +76,7 @@ export function BookingPage() {
       tax,
       total: subtotal + service + extraGuestCharge + tax,
     };
-  }, [guestCount, nights, selectedRate,]);
+  }, [guestCount, nights, selectedRate]);
 
   const allowedPaymentOptions = useMemo(() => getAllowedPaymentOptions(content.paymentRules), [content.paymentRules]);
   const bookingBalance = useMemo(() => getBookingBalance(summary.total, content.paymentRules), [content.paymentRules, summary.total]);
@@ -251,12 +257,10 @@ export function BookingPage() {
           </div>
 
           <div className="mt-8 grid gap-4 md:grid-cols-3">
-            {content.roomTypes.map((room) => (
-              <button
+            {publicRoomRates.map((room) => (
+              <div
                 key={room.id}
-                type="button"
-                onClick={() => setSelectedRate(room)}
-                className={`rounded-2xl border p-5 text-left transition ${
+                className={`rounded-2xl border p-5 text-left ${
                   selectedRate.id === room.id ? 'border-primary bg-primary/5' : 'lux-surface-soft border-transparent'
                 }`}
               >
@@ -265,13 +269,26 @@ export function BookingPage() {
                 <p className="mt-2 text-lg font-semibold text-primary">RM {room.price.toLocaleString()}</p>
                 <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-on-surface-variant">{getRoomRatePriceCaption(room)}</p>
                 {room.note ? <p className="mt-3 text-sm text-on-surface-variant">{room.note}</p> : null}
-              </button>
+              </div>
             ))}
           </div>
 
-          {!isRateValid && selectedRate.pricingType === 'package' ? (
+          <div className="mt-4 rounded-[1.5rem] border border-[#d9c9b4] bg-white/50 p-4 text-sm text-on-surface-variant">
+            <p className="text-xs uppercase tracking-[0.2em] text-primary">Auto-applied rate</p>
+            <p className="mt-2 font-headline text-2xl text-on-surface">{selectedRate.label}</p>
+            <p className="mt-1">
+              {nights > 0
+                ? `${getRoomRatePriceCaption(selectedRate)} selected based on your stay dates.`
+                : 'Pilih tarikh dahulu untuk sistem kira rate yang sesuai.'}
+            </p>
+            {selectedRate.pricingType === 'package' && nights > 0 ? (
+              <p className="mt-2 font-semibold text-primary">Package {selectedRate.packageNights} malam dipakai secara automatik.</p>
+            ) : null}
+          </div>
+
+          {nights > 0 && content.bookingSettings.publicHolidayDates.some((date) => eachNightInStay(checkIn, checkOut).includes(date)) ? (
             <div className="mt-4 rounded-[1.5rem] border border-[#ead38f] bg-[#fff7d7] p-4 text-sm text-[#7a6016]">
-              Package ini hanya sah untuk {selectedRate.packageNights} malam. Sila pilih tarikh yang sepadan atau tukar ke rate lain.
+              Tarikh pilihan termasuk cuti umum Malaysia, jadi rate Hujung Minggu / Cuti dipakai.
             </div>
           ) : null}
 
