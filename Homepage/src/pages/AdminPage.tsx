@@ -1,4 +1,5 @@
 import { FormEvent, useMemo, useState } from 'react';
+import { useEffect } from 'react';
 import type { ReactNode } from 'react';
 import {
   Bell,
@@ -204,7 +205,7 @@ export function AdminPage() {
   const [rangeEnd, setRangeEnd] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeFilter, setActiveFilter] = useState<BookingFilter>('Upcoming');
-  const [selectedBookingId, setSelectedBookingId] = useState(content.bookingOrders[0]?.id ?? '');
+  const [selectedBookingId, setSelectedBookingId] = useState('');
   const [calendarAnchor, setCalendarAnchor] = useState(() => new Date());
   const [adminView, setAdminView] = useState<'dashboard' | 'settings'>('dashboard');
 
@@ -226,6 +227,17 @@ export function AdminPage() {
     () => blockedDates.map((date) => ({ date, label: formatLongDate(date) })),
     [blockedDates],
   );
+
+  useEffect(() => {
+    if (!selectedBookingId) {
+      return;
+    }
+
+    const stillExists = content.bookingOrders.some((order) => order.id === selectedBookingId);
+    if (!stillExists) {
+      setSelectedBookingId('');
+    }
+  }, [content.bookingOrders, selectedBookingId]);
 
   if (!isAdminAuthenticated) {
     return <AdminLoginCard />;
@@ -373,6 +385,7 @@ export function AdminPage() {
   const cancelBooking = (order: BookingOrder) => {
     if (!window.confirm(`Cancel booking ${order.id}?`)) return;
     updateBooking(order.id, (current) => updateBookingStatus(current, current.paymentStatus, 'Cancelled'));
+    setSelectedBookingId('');
   };
 
   const openWhatsApp = (order: BookingOrder) => {
