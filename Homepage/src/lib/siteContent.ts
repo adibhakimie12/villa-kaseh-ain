@@ -25,12 +25,23 @@ export interface RoomType {
   label: string;
   period: string;
   price: number;
+  pricingType?: 'per-night' | 'package';
+  packageNights?: number | null;
+  note?: string;
 }
 
 export interface StayRules {
   checkInLabel: string;
   checkOutLabel: string;
   responseWindow: string;
+}
+
+export interface StayInformation {
+  pricingNotes: string[];
+  amenityNotes: string[];
+  capacityNotes: string[];
+  timingNotes: string[];
+  bookingPolicyNotes: string[];
 }
 
 export interface BookingSettings {
@@ -152,6 +163,7 @@ export interface SiteContent {
   galleryImages: string[];
   roomTypes: RoomType[];
   stayRules: StayRules;
+  stayInformation: StayInformation;
   bookingSettings: BookingSettings;
   bookingOrders: BookingOrder[];
   manualPayment: ManualPaymentSettings;
@@ -202,28 +214,92 @@ export const defaultSiteContent: SiteContent = {
   ],
   roomTypes: [
     {
-      id: 'weekday',
-      label: 'Weekday Stay',
-      period: 'Isnin - Khamis',
+      id: 'mon-thu',
+      label: 'Isnin - Khamis',
+      period: 'RM1500 / malam',
       price: 1500,
+      pricingType: 'per-night',
+      packageNights: null,
+      note: 'Sesuai untuk check-in Isnin hingga Khamis.',
     },
     {
-      id: 'weekend',
-      label: 'Weekend & Holiday',
-      period: 'Jumaat - Ahad / Cuti',
+      id: 'thu-fri',
+      label: 'Khamis - Jumaat',
+      period: 'RM1900 / malam',
+      price: 1900,
+      pricingType: 'per-night',
+      packageNights: null,
+      note: 'Rate khas untuk stay malam Khamis.',
+    },
+    {
+      id: 'weekend-1n',
+      label: 'Hujung Minggu / Cuti',
+      period: 'RM2200 / malam',
       price: 2200,
+      pricingType: 'per-night',
+      packageNights: null,
+      note: 'Untuk weekend, cuti umum, atau peak night.',
     },
     {
-      id: 'event',
-      label: 'Private Event Package',
-      period: 'Custom',
-      price: 2800,
+      id: 'weekend-2n',
+      label: 'Weekend 2 Malam',
+      period: 'RM3800 / package',
+      price: 3800,
+      pricingType: 'package',
+      packageNights: 2,
+      note: 'Package khas untuk 2 malam.',
+    },
+    {
+      id: 'weekend-3n',
+      label: 'Weekend 3 Malam',
+      period: 'RM5400 / package',
+      price: 5400,
+      pricingType: 'package',
+      packageNights: 3,
+      note: 'Package khas untuk 3 malam.',
     },
   ],
   stayRules: {
-    checkInLabel: '3:00 PM',
-    checkOutLabel: '12:00 PM',
+    checkInLabel: '3pm',
+    checkOutLabel: '12pm',
     responseWindow: 'Kebiasaannya team akan reply dalam masa kurang 2 jam pada waktu operasi.',
+  },
+  stayInformation: {
+    pricingNotes: [
+      'Isnin-Khamis: RM1500 / malam',
+      'Khamis-Jumaat: RM1900 / malam',
+      'Hujung minggu / cuti: RM2200 / malam',
+      'Weekend 2 malam: RM3800',
+      'Weekend 3 malam: RM5400',
+    ],
+    amenityNotes: [
+      '6 bilik tidur (aircond)',
+      '6 bilik air',
+      'Dapur',
+      'BBQ',
+      'Kolam renang',
+      'Tepi pantai',
+      'Kawasan luas',
+      'Pool',
+      'Ping pong',
+      'Foosball',
+    ],
+    capacityNotes: [
+      '22 katil dewasa',
+      'Maks 25 pax termasuk kanak-kanak',
+      'Lebihan pax caj tambahan',
+    ],
+    timingNotes: [
+      'Check-in 3pm',
+      'Check-out 12pm',
+      'Early / late: RM150 / jam jika available',
+    ],
+    bookingPolicyNotes: [
+      'Deposit RM1800 untuk lock tarikh',
+      'Tukar atau batal sekurang-kurangnya 2 bulan awal',
+      'Tiada refund peak period',
+      'Security deposit RM800, refund dalam 48 jam jika tiada isu',
+    ],
   },
   bookingSettings: {
     blockedDates: [],
@@ -260,7 +336,7 @@ export const defaultSiteContent: SiteContent = {
   },
   paymentRules: {
     bookingType: 'Deposit + Full Payment Choice',
-    depositAmount: 500,
+    depositAmount: 1800,
     depositPercentage: 30,
     autoCancelAfterHours: 1,
     refundable: true,
@@ -333,7 +409,14 @@ function uniqueSortedDates(dates: string[]) {
   return Array.from(new Set(dates.filter(Boolean))).sort((a, b) => a.localeCompare(b));
 }
 
+function normalizeNotes(input: unknown, fallback: string[]) {
+  return Array.isArray(input)
+    ? input.map((value) => String(value).trim()).filter(Boolean)
+    : fallback;
+}
+
 export function normalizeSiteContent(input?: Partial<SiteContent> | null): SiteContent {
+  const hasLegacyRates = Boolean(input?.roomTypes?.length && input.roomTypes.length !== defaultSiteContent.roomTypes.length);
   return {
     siteConfig: {
       ...defaultSiteContent.siteConfig,
@@ -357,11 +440,21 @@ export function normalizeSiteContent(input?: Partial<SiteContent> | null): SiteC
             ...defaultSiteContent.roomTypes[index],
             ...room,
             price: Number(room.price ?? defaultSiteContent.roomTypes[index].price),
+            pricingType: room.pricingType ?? defaultSiteContent.roomTypes[index].pricingType,
+            packageNights: room.packageNights ?? defaultSiteContent.roomTypes[index].packageNights,
+            note: room.note ?? defaultSiteContent.roomTypes[index].note,
           }))
         : defaultSiteContent.roomTypes,
     stayRules: {
       ...defaultSiteContent.stayRules,
       ...input?.stayRules,
+    },
+    stayInformation: {
+      pricingNotes: normalizeNotes(input?.stayInformation?.pricingNotes, defaultSiteContent.stayInformation.pricingNotes),
+      amenityNotes: normalizeNotes(input?.stayInformation?.amenityNotes, defaultSiteContent.stayInformation.amenityNotes),
+      capacityNotes: normalizeNotes(input?.stayInformation?.capacityNotes, defaultSiteContent.stayInformation.capacityNotes),
+      timingNotes: normalizeNotes(input?.stayInformation?.timingNotes, defaultSiteContent.stayInformation.timingNotes),
+      bookingPolicyNotes: normalizeNotes(input?.stayInformation?.bookingPolicyNotes, defaultSiteContent.stayInformation.bookingPolicyNotes),
     },
     bookingSettings: {
       blockedDates: uniqueSortedDates(input?.bookingSettings?.blockedDates ?? defaultSiteContent.bookingSettings.blockedDates),
@@ -417,7 +510,9 @@ export function normalizeSiteContent(input?: Partial<SiteContent> | null): SiteC
       ...defaultSiteContent.paymentRules,
       ...input?.paymentRules,
       bookingType: input?.paymentRules?.bookingType ?? defaultSiteContent.paymentRules.bookingType,
-      depositAmount: Number(input?.paymentRules?.depositAmount ?? defaultSiteContent.paymentRules.depositAmount),
+      depositAmount: hasLegacyRates
+        ? defaultSiteContent.paymentRules.depositAmount
+        : Number(input?.paymentRules?.depositAmount ?? defaultSiteContent.paymentRules.depositAmount),
       depositPercentage: Number(input?.paymentRules?.depositPercentage ?? defaultSiteContent.paymentRules.depositPercentage),
       autoCancelAfterHours: Number(input?.paymentRules?.autoCancelAfterHours ?? defaultSiteContent.paymentRules.autoCancelAfterHours),
       refundable: Boolean(input?.paymentRules?.refundable ?? defaultSiteContent.paymentRules.refundable),

@@ -205,13 +205,32 @@ export function HomePage({ onNavigate }: HomePageProps) {
             </p>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {content.roomTypes.map((room) => (
               <article key={room.id} className="lux-surface rounded-[1.75rem] p-6 md:p-7">
                 <p className="text-[10px] uppercase tracking-[0.28em] text-[#4c9085]">{room.period}</p>
                 <h3 className="mt-4 font-headline text-3xl">{room.label}</h3>
                 <p className="mt-5 text-4xl font-semibold text-[#3f7b72]">RM {room.price.toLocaleString()}</p>
-                <p className="mt-2 text-[11px] uppercase tracking-[0.22em] text-on-surface-variant">Per Night</p>
+                <p className="mt-2 text-[11px] uppercase tracking-[0.22em] text-on-surface-variant">{room.pricingType === 'package' ? `Package ${room.packageNights} Malam` : 'Per Night'}</p>
+                {room.note ? <p className="mt-3 text-sm leading-7 text-on-surface-variant">{room.note}</p> : null}
+              </article>
+            ))}
+          </div>
+
+          <div className="mt-8 grid gap-4 md:grid-cols-2">
+            {[
+              ['Kapasiti', content.stayInformation.capacityNotes],
+              ['Masa', content.stayInformation.timingNotes],
+              ['Tempahan', content.stayInformation.bookingPolicyNotes],
+              ['Kemudahan', content.stayInformation.amenityNotes],
+            ].map(([title, notes]) => (
+              <article key={title} className="lux-surface rounded-[1.75rem] p-6">
+                <p className="text-[10px] uppercase tracking-[0.28em] text-[#4c9085]">{title}</p>
+                <div className="mt-4 space-y-3 text-sm leading-7 text-on-surface-variant">
+                  {(notes as string[]).map((note) => (
+                    <p key={note}>{note}</p>
+                  ))}
+                </div>
               </article>
             ))}
           </div>

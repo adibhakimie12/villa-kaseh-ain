@@ -1,5 +1,5 @@
 import { eachNightInStay, toIsoDate } from './date';
-import type { BookingOrder, BookingStatus, ManualPaymentSettings, PaymentOptionSelected, PaymentRules, PaymentStatus } from './siteContent';
+import type { BookingOrder, BookingStatus, ManualPaymentSettings, PaymentOptionSelected, PaymentRules, PaymentStatus, RoomType } from './siteContent';
 
 export type BookingFilter = 'Today' | 'Upcoming' | 'Paid' | 'Pending' | 'Cancelled';
 export type AvailabilityState = 'available' | 'booked' | 'pending' | 'blocked';
@@ -16,6 +16,28 @@ export function getPublicGuestOptions() {
 
 export function getExtraGuestCharge(guestCount: number, nights: number, ratePerPersonPerNight: number, includedGuests = 25) {
   return Math.max(guestCount - includedGuests, 0) * ratePerPersonPerNight * Math.max(nights, 0);
+}
+
+export function isRateSelectionValid(rate: RoomType, nights: number) {
+  if (rate.pricingType !== 'package') {
+    return nights > 0;
+  }
+
+  return nights === Number(rate.packageNights || 0);
+}
+
+export function getRoomRateSubtotal(rate: RoomType, nights: number) {
+  if (!nights) return 0;
+  if (rate.pricingType === 'package') {
+    return isRateSelectionValid(rate, nights) ? rate.price : 0;
+  }
+  return nights * rate.price;
+}
+
+export function getRoomRatePriceCaption(rate: RoomType) {
+  return rate.pricingType === 'package'
+    ? `Package ${rate.packageNights} malam`
+    : 'Per malam';
 }
 
 export function selectBookingCalendarDate(input: { checkIn: string; checkOut: string; selectedDate: string }) {

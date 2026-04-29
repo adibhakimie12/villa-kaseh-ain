@@ -80,6 +80,24 @@ export function ContactPage() {
               <p>{`Check-out: ${content.stayRules.checkOutLabel}`}</p>
               <p className="mt-2 text-xs uppercase tracking-[0.2em] text-primary">Subject to confirmation</p>
             </div>
+            <div className="mt-6 grid gap-4">
+              <div className="lux-inset rounded-2xl p-4 text-sm text-on-surface-variant">
+                <p className="text-xs uppercase tracking-[0.2em] text-primary">Capacity</p>
+                <div className="mt-3 space-y-2">
+                  {content.stayInformation.capacityNotes.map((note) => (
+                    <p key={note}>{note}</p>
+                  ))}
+                </div>
+              </div>
+              <div className="lux-inset rounded-2xl p-4 text-sm text-on-surface-variant">
+                <p className="text-xs uppercase tracking-[0.2em] text-primary">Booking Notes</p>
+                <div className="mt-3 space-y-2">
+                  {content.stayInformation.bookingPolicyNotes.map((note) => (
+                    <p key={note}>{note}</p>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         </section>
       </div>

@@ -43,6 +43,8 @@ import type {
   GatewayProvider,
   PaymentStatus,
   BookingStatus,
+  RoomType,
+  StayInformation,
 } from '../lib/siteContent';
 
 const bookingFilters: BookingFilter[] = ['Today', 'Upcoming', 'Paid', 'Pending', 'Cancelled'];
@@ -188,6 +190,17 @@ function FieldLabel({ children }: { children: ReactNode }) {
   return <span className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">{children}</span>;
 }
 
+function notesToTextareaValue(notes: string[]) {
+  return notes.join('\n');
+}
+
+function textareaValueToNotes(value: string) {
+  return value
+    .split('\n')
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 export function AdminPage() {
   const {
     canUseSupabase,
@@ -283,6 +296,30 @@ export function AdminPage() {
             }
           : room,
       ),
+    }));
+  };
+
+  const updateRoomField = <Field extends keyof RoomType>(roomId: string, field: Field, value: RoomType[Field]) => {
+    updateContent((current) => ({
+      ...current,
+      roomTypes: current.roomTypes.map((room) =>
+        room.id === roomId
+          ? {
+              ...room,
+              [field]: value,
+            }
+          : room,
+      ),
+    }));
+  };
+
+  const updateStayInformationField = <Field extends keyof StayInformation>(field: Field, value: string) => {
+    updateContent((current) => ({
+      ...current,
+      stayInformation: {
+        ...current.stayInformation,
+        [field]: textareaValueToNotes(value),
+      },
     }));
   };
 
@@ -1003,13 +1040,121 @@ export function AdminPage() {
 
         <section className={`lux-surface rounded-[2rem] p-6 md:p-8 ${adminView === 'dashboard' ? '' : 'hidden'}`}>
           <h2 className="font-headline text-2xl">Rates</h2>
-          <div className="mt-6 grid gap-4 md:grid-cols-3">
+          <p className="mt-3 text-sm text-on-surface-variant">
+            Update semua rate live di sini, termasuk package hujung minggu dan nota khas untuk customer.
+          </p>
+          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {content.roomTypes.map((room) => (
-              <label key={room.id} className="block">
-                <FieldLabel>{room.label}</FieldLabel>
-                <input type="number" min={0} value={room.price} onChange={(event) => updateRoomPrice(room.id, event.target.value)} className="lux-inset mt-2 w-full rounded-2xl px-4 py-4 text-sm outline-none" />
-              </label>
+              <div key={room.id} className="rounded-[1.5rem] border border-stone-200/80 p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">{room.id}</p>
+                <label className="mt-3 block">
+                  <FieldLabel>Label</FieldLabel>
+                  <input
+                    value={room.label}
+                    onChange={(event) => updateRoomField(room.id, 'label', event.target.value)}
+                    className="lux-inset mt-2 w-full rounded-2xl px-4 py-4 text-sm outline-none"
+                  />
+                </label>
+                <label className="mt-3 block">
+                  <FieldLabel>Period / Caption</FieldLabel>
+                  <input
+                    value={room.period}
+                    onChange={(event) => updateRoomField(room.id, 'period', event.target.value)}
+                    className="lux-inset mt-2 w-full rounded-2xl px-4 py-4 text-sm outline-none"
+                  />
+                </label>
+                <label className="mt-3 block">
+                  <FieldLabel>Pricing Type</FieldLabel>
+                  <select
+                    value={room.pricingType ?? 'per-night'}
+                    onChange={(event) => updateRoomField(room.id, 'pricingType', event.target.value as RoomType['pricingType'])}
+                    className="lux-inset mt-2 w-full rounded-2xl px-4 py-4 text-sm outline-none"
+                  >
+                    <option value="per-night">Per Night</option>
+                    <option value="package">Package</option>
+                  </select>
+                </label>
+                <label className="mt-3 block">
+                  <FieldLabel>Price</FieldLabel>
+                  <input
+                    type="number"
+                    min={0}
+                    value={room.price}
+                    onChange={(event) => updateRoomPrice(room.id, event.target.value)}
+                    className="lux-inset mt-2 w-full rounded-2xl px-4 py-4 text-sm outline-none"
+                  />
+                </label>
+                {room.pricingType === 'package' ? (
+                  <label className="mt-3 block">
+                    <FieldLabel>Package Nights</FieldLabel>
+                    <input
+                      type="number"
+                      min={1}
+                      value={room.packageNights ?? ''}
+                      onChange={(event) => updateRoomField(room.id, 'packageNights', Number(event.target.value) || 0)}
+                      className="lux-inset mt-2 w-full rounded-2xl px-4 py-4 text-sm outline-none"
+                    />
+                  </label>
+                ) : null}
+                <label className="mt-3 block">
+                  <FieldLabel>Customer Note</FieldLabel>
+                  <textarea
+                    value={room.note ?? ''}
+                    onChange={(event) => updateRoomField(room.id, 'note', event.target.value)}
+                    className="lux-inset mt-2 min-h-24 w-full rounded-2xl px-4 py-4 text-sm outline-none"
+                  />
+                </label>
+              </div>
             ))}
+          </div>
+        </section>
+
+        <section className={`lux-surface rounded-[2rem] p-6 md:p-8 ${adminView === 'dashboard' ? '' : 'hidden'}`}>
+          <h2 className="font-headline text-2xl">Stay Notes & Policy</h2>
+          <p className="mt-3 text-sm text-on-surface-variant">
+            Satu baris untuk satu point. Semua text ini akan dipaparkan pada booking, homepage, dan contact section.
+          </p>
+          <div className="mt-6 grid gap-4 md:grid-cols-2">
+            <label className="block">
+              <FieldLabel>Pricing Notes</FieldLabel>
+              <textarea
+                value={notesToTextareaValue(content.stayInformation.pricingNotes)}
+                onChange={(event) => updateStayInformationField('pricingNotes', event.target.value)}
+                className="lux-inset mt-2 min-h-40 w-full rounded-2xl px-4 py-4 text-sm outline-none"
+              />
+            </label>
+            <label className="block">
+              <FieldLabel>Amenity Notes</FieldLabel>
+              <textarea
+                value={notesToTextareaValue(content.stayInformation.amenityNotes)}
+                onChange={(event) => updateStayInformationField('amenityNotes', event.target.value)}
+                className="lux-inset mt-2 min-h-40 w-full rounded-2xl px-4 py-4 text-sm outline-none"
+              />
+            </label>
+            <label className="block">
+              <FieldLabel>Capacity Notes</FieldLabel>
+              <textarea
+                value={notesToTextareaValue(content.stayInformation.capacityNotes)}
+                onChange={(event) => updateStayInformationField('capacityNotes', event.target.value)}
+                className="lux-inset mt-2 min-h-36 w-full rounded-2xl px-4 py-4 text-sm outline-none"
+              />
+            </label>
+            <label className="block">
+              <FieldLabel>Timing Notes</FieldLabel>
+              <textarea
+                value={notesToTextareaValue(content.stayInformation.timingNotes)}
+                onChange={(event) => updateStayInformationField('timingNotes', event.target.value)}
+                className="lux-inset mt-2 min-h-36 w-full rounded-2xl px-4 py-4 text-sm outline-none"
+              />
+            </label>
+            <label className="block md:col-span-2">
+              <FieldLabel>Booking Policy Notes</FieldLabel>
+              <textarea
+                value={notesToTextareaValue(content.stayInformation.bookingPolicyNotes)}
+                onChange={(event) => updateStayInformationField('bookingPolicyNotes', event.target.value)}
+                className="lux-inset mt-2 min-h-40 w-full rounded-2xl px-4 py-4 text-sm outline-none"
+              />
+            </label>
           </div>
         </section>
       </div>

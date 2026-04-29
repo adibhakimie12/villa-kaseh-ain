@@ -11,8 +11,11 @@ import {
   getAllowedPaymentOptions,
   getBookingBalance,
   getPaymentDueNow,
+  getRoomRatePriceCaption,
+  getRoomRateSubtotal,
   getAvailabilityStateForDate,
   getPublicGuestOptions,
+  isRateSelectionValid,
   selectBookingCalendarDate,
 } from '../lib/booking';
 import type { BookingOrder, PaymentOptionSelected } from '../lib/siteContent';
@@ -52,10 +55,11 @@ export function BookingPage() {
   }, [blockedDates, checkIn, checkOut, content.bookingOrders]);
 
   const isSelectionAvailable = Boolean(checkIn && checkOut && overlappingBlockedDates.length === 0);
-  const canSubmitBooking = isSelectionAvailable && nights > 0 && guestName.trim() && phone.trim() && email.trim();
+  const isRateValid = isRateSelectionValid(selectedRate, nights);
+  const canSubmitBooking = isSelectionAvailable && nights > 0 && guestName.trim() && phone.trim() && email.trim() && isRateValid;
 
   const summary = useMemo(() => {
-    const subtotal = nights * selectedRate.price;
+    const subtotal = getRoomRateSubtotal(selectedRate, nights);
     const service = subtotal * 0.1;
     const extraGuestCharge = getExtraGuestCharge(guestCount, nights, extraGuestRatePerPersonPerNight, maxIncludedGuests);
     const tax = nights > 0 ? 40 : 0;
@@ -66,7 +70,7 @@ export function BookingPage() {
       tax,
       total: subtotal + service + extraGuestCharge + tax,
     };
-  }, [guestCount, nights, selectedRate.price]);
+  }, [guestCount, nights, selectedRate,]);
 
   const allowedPaymentOptions = useMemo(() => getAllowedPaymentOptions(content.paymentRules), [content.paymentRules]);
   const bookingBalance = useMemo(() => getBookingBalance(summary.total, content.paymentRules), [content.paymentRules, summary.total]);
@@ -259,9 +263,17 @@ export function BookingPage() {
                 <p className="text-[11px] uppercase tracking-[0.2em] text-on-surface-variant">{room.period}</p>
                 <p className="mt-2 font-headline text-xl">{room.label}</p>
                 <p className="mt-2 text-lg font-semibold text-primary">RM {room.price.toLocaleString()}</p>
+                <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-on-surface-variant">{getRoomRatePriceCaption(room)}</p>
+                {room.note ? <p className="mt-3 text-sm text-on-surface-variant">{room.note}</p> : null}
               </button>
             ))}
           </div>
+
+          {!isRateValid && selectedRate.pricingType === 'package' ? (
+            <div className="mt-4 rounded-[1.5rem] border border-[#ead38f] bg-[#fff7d7] p-4 text-sm text-[#7a6016]">
+              Package ini hanya sah untuk {selectedRate.packageNights} malam. Sila pilih tarikh yang sepadan atau tukar ke rate lain.
+            </div>
+          ) : null}
 
           <div className="mt-8 grid gap-5 xl:grid-cols-2">
             <div className="xl:col-span-2 flex flex-wrap items-center justify-between gap-3 rounded-[1.5rem] border border-stone-200/80 bg-white/45 px-4 py-4">
@@ -387,7 +399,7 @@ export function BookingPage() {
             <p>{`Nights: ${nights}`}</p>
             <p>{`Guests: ${guestCount}`}</p>
             <p>{`Rate: ${selectedRate.label}`}</p>
-            <p>{`Status: ${isSelectionAvailable ? 'Available to proceed' : 'Please review selected dates'}`}</p>
+            <p>{`Status: ${isSelectionAvailable && isRateValid ? 'Available to proceed' : 'Please review selected dates'}`}</p>
           </div>
 
           <div className="lux-inset mt-6 space-y-2 rounded-2xl p-4 text-sm">
@@ -617,7 +629,7 @@ export function BookingPage() {
               canSubmitBooking ? 'bg-primary text-white' : 'cursor-not-allowed bg-stone-300 text-stone-500'
             }`}
           >
-            {checkIn && checkOut ? (isSelectionAvailable ? 'Create Pending Booking' : 'Selected Dates Unavailable') : 'Select Stay Dates'}
+            {checkIn && checkOut ? (isSelectionAvailable && isRateValid ? 'Create Pending Booking' : 'Selected Dates Unavailable') : 'Select Stay Dates'}
           </button>
 
           <a
@@ -634,10 +646,9 @@ export function BookingPage() {
           </a>
 
           <ul className="mt-6 space-y-2 text-sm text-on-surface-variant">
-            <li className="flex items-center gap-2"><CheckCircle2 size={16} className="text-primary" /> Fast response from host</li>
-            <li className="flex items-center gap-2"><CheckCircle2 size={16} className="text-primary" /> Flexible inquiry for events</li>
-            <li className="flex items-center gap-2"><CheckCircle2 size={16} className="text-primary" /> Family-friendly setup</li>
-            <li className="flex items-center gap-2"><CheckCircle2 size={16} className="text-primary" /> Extra charge applies above 25 guests</li>
+            {[...content.stayInformation.capacityNotes, ...content.stayInformation.timingNotes, ...content.stayInformation.bookingPolicyNotes].map((note) => (
+              <li key={note} className="flex items-center gap-2"><CheckCircle2 size={16} className="text-primary" /> {note}</li>
+            ))}
           </ul>
         </aside>
       </div>
