@@ -88,33 +88,35 @@ function AdminLoginCard() {
             Panel ni versi simple untuk urus content, bookings, payment settings, dan calendar villa.
           </p>
 
-          <div className="mt-8 grid gap-6 lg:grid-cols-2">
-            <form className="space-y-4 rounded-[1.75rem] border border-stone-200/80 p-5" onSubmit={handleSubmit}>
-              <p className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Local Fallback</p>
-              <label className="block">
-                <span className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Passcode</span>
-                <div className="lux-inset mt-2 flex items-center gap-3 rounded-2xl px-4 py-4">
-                  <Lock size={16} className="text-primary" />
-                  <input
-                    type="password"
-                    value={passcode}
-                    onChange={(event) => setPasscode(event.target.value)}
-                    className="w-full bg-transparent text-sm outline-none"
-                    placeholder="Masukkan passcode admin"
-                  />
-                </div>
-              </label>
+          <div className={`mt-8 grid gap-6 ${canUseSupabase ? 'lg:grid-cols-1' : 'lg:grid-cols-2'}`}>
+            {!canUseSupabase ? (
+              <form className="space-y-4 rounded-[1.75rem] border border-stone-200/80 p-5" onSubmit={handleSubmit}>
+                <p className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Local Fallback</p>
+                <label className="block">
+                  <span className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Passcode</span>
+                  <div className="lux-inset mt-2 flex items-center gap-3 rounded-2xl px-4 py-4">
+                    <Lock size={16} className="text-primary" />
+                    <input
+                      type="password"
+                      value={passcode}
+                      onChange={(event) => setPasscode(event.target.value)}
+                      className="w-full bg-transparent text-sm outline-none"
+                      placeholder="Masukkan passcode admin"
+                    />
+                  </div>
+                </label>
 
-              <button
-                type="submit"
-                className="inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-6 py-4 text-xs font-bold uppercase tracking-[0.2em] text-white"
-              >
-                Unlock Local Admin
-              </button>
-              <p className="text-xs text-on-surface-variant">
-                Default passcode semasa: <span className="font-semibold text-on-surface">villa2026</span>
-              </p>
-            </form>
+                <button
+                  type="submit"
+                  className="inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-6 py-4 text-xs font-bold uppercase tracking-[0.2em] text-white"
+                >
+                  Unlock Local Admin
+                </button>
+                <p className="text-xs text-on-surface-variant">
+                  Default passcode semasa: <span className="font-semibold text-on-surface">villa2026</span>
+                </p>
+              </form>
+            ) : null}
 
             <form className="space-y-4 rounded-[1.75rem] border border-stone-200/80 p-5" onSubmit={handleSupabaseLogin}>
               <p className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Admin Login</p>
@@ -151,7 +153,7 @@ function AdminLoginCard() {
               </button>
               <p className="text-xs text-on-surface-variant">
                 {canUseSupabase
-                  ? 'Gunakan email dan password admin yang telah didaftarkan.'
+                  ? 'Gunakan email dan password admin yang telah didaftarkan. Local fallback dimatikan pada environment ini.'
                   : 'Login admin belum aktif pada build ini. Isi env Vercel dan redeploy untuk aktifkan sync.'}
               </p>
             </form>

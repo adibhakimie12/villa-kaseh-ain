@@ -182,6 +182,11 @@ export function SiteContentProvider({ children }: { children: ReactNode }) {
       }
     },
     login: (passcode) => {
+      if (isSupabaseConfigured) {
+        setIsAdminAuthenticated(false);
+        return false;
+      }
+
       const ok = passcode === ADMIN_PASSCODE;
       if (ok && typeof window !== 'undefined') {
         window.sessionStorage.setItem(ADMIN_SESSION_KEY, 'true');
