@@ -4,6 +4,7 @@ import {
   buildNotificationText,
   buildCustomerPaymentWhatsappMessage,
   buildBookingMetrics,
+  buildBookingTrend,
   getExtraGuestCharge,
   getPaymentActionLabel,
   getPublicGuestOptions,
@@ -119,6 +120,11 @@ assert.deepEqual(buildBookingMetrics(orders, '2026-04-29'), {
   occupancyRate: 7,
   averageStayNights: 1.67,
 });
+
+const trendTotal = buildBookingTrend(orders, '2026-04-29').reduce((sum, item) => sum + item.count, 0);
+assert.equal(trendTotal, 2);
+const cancelledTrendTotal = buildBookingTrend([{ ...orders[1], bookingStatus: 'Cancelled' }], '2026-04-29').reduce((sum, item) => sum + item.count, 0);
+assert.equal(cancelledTrendTotal, 0);
 
 assert.equal(getAvailabilityStateForDate('2026-05-10', orders, ['2026-05-20']).state, 'booked');
 assert.equal(getAvailabilityStateForDate('2026-05-15', orders, ['2026-05-20']).state, 'pending');

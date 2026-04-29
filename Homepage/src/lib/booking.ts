@@ -180,7 +180,7 @@ export function buildBookingTrend(orders: BookingOrder[], todayValue = toIsoDate
     const isoDate = toIsoDate(date);
     return {
       date: isoDate,
-      count: orders.filter((order) => order.createdAt.slice(0, 10) === isoDate).length,
+      count: orders.filter((order) => order.createdAt.slice(0, 10) === isoDate && order.bookingStatus !== 'Cancelled').length,
     };
   });
 }
