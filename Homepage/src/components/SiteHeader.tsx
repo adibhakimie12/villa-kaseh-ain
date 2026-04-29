@@ -1,6 +1,6 @@
 import { Menu, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { siteConfig, whatsappUrl } from '../data/site';
+import { useSiteContent } from '../context/SiteContentContext';
 
 interface SiteHeaderProps {
   pathname: string;
@@ -14,6 +14,7 @@ const navItems = [
 ];
 
 export function SiteHeader({ pathname, onNavigate }: SiteHeaderProps) {
+  const { content, whatsappUrl } = useSiteContent();
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const isHome = pathname === '/';
@@ -59,7 +60,7 @@ export function SiteHeader({ pathname, onNavigate }: SiteHeaderProps) {
         >
           <img
             src="/villa-kaseh-ain-logo-transparent.png"
-            alt={`${siteConfig.name} logo`}
+            alt={`${content.siteConfig.name} logo`}
             className={`h-auto w-full object-contain transition-all duration-500 ${
               showFullHeader
                 ? 'opacity-100'

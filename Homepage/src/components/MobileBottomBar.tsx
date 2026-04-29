@@ -1,5 +1,5 @@
 import { MessageCircle } from 'lucide-react';
-import { whatsappUrl } from '../data/site';
+import { useSiteContent } from '../context/SiteContentContext';
 
 interface MobileBottomBarProps {
   onNavigate: (path: string) => void;
@@ -7,6 +7,12 @@ interface MobileBottomBarProps {
 }
 
 export function MobileBottomBar({ onNavigate, pathname }: MobileBottomBarProps) {
+  const { whatsappUrl } = useSiteContent();
+
+  if (pathname === '/admin') {
+    return null;
+  }
+
   return (
     <div className="fixed inset-x-0 bottom-0 z-50 bg-transparent px-3 pb-0 md:hidden">
       <div className="mx-auto grid max-w-md grid-cols-2 gap-2 rounded-t-[1.5rem] border border-b-0 border-stone-200 bg-white/96 p-2 shadow-[0_-10px_24px_rgba(15,23,42,0.10)] backdrop-blur">

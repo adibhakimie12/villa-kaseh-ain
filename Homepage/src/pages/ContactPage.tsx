@@ -1,7 +1,9 @@
 import { MapPin, Phone, Facebook, Instagram, MessageCircle } from 'lucide-react';
-import { siteConfig, whatsappUrl } from '../data/site';
+import { useSiteContent } from '../context/SiteContentContext';
 
 export function ContactPage() {
+  const { content, whatsappUrl } = useSiteContent();
+
   return (
     <main className="bg-[#eef2f5] px-4 pb-20 pt-28 md:px-8">
       <div className="mx-auto grid w-full max-w-7xl gap-8 lg:grid-cols-2">
@@ -17,8 +19,8 @@ export function ContactPage() {
               <MapPin className="mt-0.5 text-primary" size={18} />
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Location</p>
-                <p className="mt-1 text-sm text-on-surface">{siteConfig.fullAddress}</p>
-                <a href={siteConfig.mapsUrl} target="_blank" rel="noreferrer" className="mt-2 inline-block text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+                <p className="mt-1 text-sm text-on-surface">{content.siteConfig.fullAddress}</p>
+                <a href={content.siteConfig.mapsUrl} target="_blank" rel="noreferrer" className="mt-2 inline-block text-xs font-semibold uppercase tracking-[0.2em] text-primary">
                   Open Map
                 </a>
               </div>
@@ -28,7 +30,7 @@ export function ContactPage() {
               <Phone className="mt-0.5 text-primary" size={18} />
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">WhatsApp</p>
-                <p className="mt-1 text-sm text-on-surface">+{siteConfig.whatsappNumber}</p>
+                <p className="mt-1 text-sm text-on-surface">+{content.siteConfig.whatsappNumber}</p>
               </div>
             </article>
           </div>
@@ -44,7 +46,7 @@ export function ContactPage() {
               WhatsApp Now
             </a>
             <a
-              href={siteConfig.facebookUrl}
+              href={content.siteConfig.facebookUrl}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center justify-center gap-2 rounded-full border border-stone-300 px-6 py-4 text-xs font-bold uppercase tracking-[0.2em] text-primary"
@@ -53,7 +55,7 @@ export function ContactPage() {
               Facebook Page
             </a>
             <a
-              href={siteConfig.instagramUrl}
+              href={content.siteConfig.instagramUrl}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center justify-center gap-2 rounded-full border border-stone-300 px-6 py-4 text-xs font-bold uppercase tracking-[0.2em] text-primary"
@@ -72,10 +74,10 @@ export function ContactPage() {
           />
           <div className="p-6 md:p-8">
             <h2 className="font-headline text-2xl">Response Window</h2>
-            <p className="mt-3 text-sm text-on-surface-variant">Kebiasaannya team akan reply dalam masa kurang 2 jam pada waktu operasi.</p>
+            <p className="mt-3 text-sm text-on-surface-variant">{content.stayRules.responseWindow}</p>
             <div className="lux-inset mt-6 rounded-2xl p-4 text-sm text-on-surface-variant">
-              <p>Check-in: 3:00 PM</p>
-              <p>Check-out: 12:00 PM</p>
+              <p>{`Check-in: ${content.stayRules.checkInLabel}`}</p>
+              <p>{`Check-out: ${content.stayRules.checkOutLabel}`}</p>
               <p className="mt-2 text-xs uppercase tracking-[0.2em] text-primary">Subject to confirmation</p>
             </div>
           </div>

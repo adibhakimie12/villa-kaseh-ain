@@ -3,12 +3,14 @@ import { FirstVisitPopup } from './components/FirstVisitPopup';
 import { MobileBottomBar } from './components/MobileBottomBar';
 import { SiteFooter } from './components/SiteFooter';
 import { SiteHeader } from './components/SiteHeader';
+import { SiteContentProvider } from './context/SiteContentContext';
+import { AdminPage } from './pages/AdminPage';
 import { BookingPage } from './pages/BookingPage';
 import { ContactPage } from './pages/ContactPage';
 import { HomePage } from './pages/HomePage';
 
 function normalizePath(pathname: string) {
-  if (pathname === '/' || pathname === '/booking' || pathname === '/contact') {
+  if (pathname === '/' || pathname === '/booking' || pathname === '/contact' || pathname === '/admin') {
     return pathname;
   }
   return '/';
@@ -40,14 +42,17 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-surface pb-0 md:pb-0">
-      <SiteHeader pathname={pathname} onNavigate={navigate} />
-      {pathname === '/' && <HomePage onNavigate={navigate} />}
-      {pathname === '/booking' && <BookingPage />}
-      {pathname === '/contact' && <ContactPage />}
-      {showFirstVisitPopup && <FirstVisitPopup onClose={closeFirstVisitPopup} onNavigate={navigate} />}
-      <SiteFooter />
-      <MobileBottomBar pathname={pathname} onNavigate={navigate} />
-    </div>
+    <SiteContentProvider>
+      <div className="min-h-screen bg-surface pb-0 md:pb-0">
+        <SiteHeader pathname={pathname} onNavigate={navigate} />
+        {pathname === '/' && <HomePage onNavigate={navigate} />}
+        {pathname === '/booking' && <BookingPage />}
+        {pathname === '/contact' && <ContactPage />}
+        {pathname === '/admin' && <AdminPage />}
+        {showFirstVisitPopup && <FirstVisitPopup onClose={closeFirstVisitPopup} onNavigate={navigate} />}
+        <SiteFooter />
+        <MobileBottomBar pathname={pathname} onNavigate={navigate} />
+      </div>
+    </SiteContentProvider>
   );
 }

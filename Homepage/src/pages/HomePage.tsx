@@ -1,5 +1,5 @@
 import { ArrowRight, MapPin, MessageCircle, Waves, Flame, BedDouble, Car } from 'lucide-react';
-import { galleryImages, heroMedia, roomTypes, siteConfig, villaFeatures, whatsappUrl } from '../data/site';
+import { useSiteContent } from '../context/SiteContentContext';
 
 interface HomePageProps {
   onNavigate: (path: string) => void;
@@ -8,6 +8,8 @@ interface HomePageProps {
 const featureIcons = [Waves, Flame, BedDouble, Car, MapPin, Waves];
 
 export function HomePage({ onNavigate }: HomePageProps) {
+  const { content, whatsappUrl } = useSiteContent();
+
   const scrollToGallery = () => {
     document.getElementById('gallery')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
@@ -21,7 +23,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
       <section className="relative flex min-h-[100svh] items-center overflow-hidden pt-20 md:min-h-screen md:pt-28">
         <img
           className="absolute inset-0 h-full w-full object-cover"
-          src={heroMedia.poster}
+          src={content.heroMedia.poster}
           alt="Villa Kaseh Ain beachfront view"
         />
         <div className="lux-hero-overlay absolute inset-0" />
@@ -29,12 +31,12 @@ export function HomePage({ onNavigate }: HomePageProps) {
 
         <div className="relative z-10 mx-auto flex w-full max-w-7xl -translate-y-4 flex-col px-5 pb-8 md:-translate-y-8 md:px-10 md:pb-10">
           <div className="mx-auto flex w-full max-w-3xl flex-col items-center text-center">
-            <p className="text-[10px] uppercase tracking-[0.36em] text-[#d6e7e3] md:text-[11px]">Kampung Pasir Putih, Marang</p>
+            <p className="text-[10px] uppercase tracking-[0.36em] text-[#d6e7e3] md:text-[11px]">{content.siteConfig.locationShort}</p>
             <h1 className="mt-5 font-headline text-5xl font-semibold leading-[0.95] text-[#fff6ea] md:text-7xl">
-              Villa Kaseh Ain
+              {content.siteConfig.name}
             </h1>
             <p className="mt-5 max-w-2xl text-sm leading-7 text-[#f1e6d7]/88 md:text-base">
-              Konsep beachfront retreat untuk family, reunion dan private event dengan suasana tenang, eksklusif dan selesa.
+              {content.siteConfig.tagline}
             </p>
             <div className="mt-8 flex w-full max-w-xl flex-col gap-3 sm:flex-row sm:justify-center">
               <button
@@ -110,7 +112,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
           <div className="grid grid-cols-[1.02fr_0.98fr] gap-4 md:gap-5">
             <div className="overflow-hidden rounded-[2rem] shadow-[0_20px_50px_rgba(45,27,13,0.12)]">
               <img
-                src={galleryImages[0]}
+                src={content.galleryImages[0]}
                 alt="Villa Kaseh Ain exterior view"
                 className="h-full min-h-[320px] w-full object-cover"
               />
@@ -118,14 +120,14 @@ export function HomePage({ onNavigate }: HomePageProps) {
             <div className="flex flex-col gap-4 md:gap-5">
               <div className="overflow-hidden rounded-[2rem] shadow-[0_20px_50px_rgba(45,27,13,0.12)]">
                 <img
-                  src={galleryImages[1]}
+                  src={content.galleryImages[1]}
                   alt="Villa Kaseh Ain interior view"
                   className="h-44 w-full object-cover md:h-52"
                 />
               </div>
               <div className="overflow-hidden rounded-[2rem] shadow-[0_20px_50px_rgba(45,27,13,0.12)]">
                 <img
-                  src={galleryImages[2]}
+                  src={content.galleryImages[2]}
                   alt="Villa Kaseh Ain pool view"
                   className="h-44 w-full object-cover md:h-60"
                 />
@@ -142,7 +144,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
             <h2 className="mt-4 font-headline text-4xl text-[#22312d] md:text-6xl">The details that make the stay feel premium.</h2>
           </div>
           <div className="mt-10 grid gap-4 md:mt-12 md:grid-cols-3 md:gap-5">
-            {villaFeatures.map((feature, index) => {
+            {content.villaFeatures.map((feature, index) => {
               const Icon = featureIcons[index % featureIcons.length];
               return (
                 <article
@@ -167,7 +169,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
               <h2 className="mt-4 font-headline text-4xl md:text-6xl">Light, texture, atmosphere, and the rhythm of the sea.</h2>
             </div>
             <a
-              href={siteConfig.facebookUrl}
+              href={content.siteConfig.facebookUrl}
               target="_blank"
               rel="noreferrer"
               className="rounded-full border border-[#cdb89b] px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-[#7a6245]"
@@ -177,16 +179,16 @@ export function HomePage({ onNavigate }: HomePageProps) {
           </div>
           <div className="mt-10 grid gap-4 md:mt-12 md:grid-cols-[1.05fr_0.95fr_0.95fr] md:grid-rows-2 md:gap-5">
             <div className="overflow-hidden rounded-[2rem] md:row-span-2">
-              <img src={galleryImages[0]} alt="Villa Kaseh Ain" className="h-full min-h-[340px] w-full object-cover" />
+              <img src={content.galleryImages[0]} alt="Villa Kaseh Ain" className="h-full min-h-[340px] w-full object-cover" />
             </div>
             <div className="overflow-hidden rounded-[2rem]">
-              <img src={galleryImages[1]} alt="Villa Kaseh Ain" className="h-56 w-full object-cover md:h-full" />
+              <img src={content.galleryImages[1]} alt="Villa Kaseh Ain" className="h-56 w-full object-cover md:h-full" />
             </div>
             <div className="overflow-hidden rounded-[2rem]">
-              <img src={galleryImages[2]} alt="Villa Kaseh Ain" className="h-56 w-full object-cover md:h-full" />
+              <img src={content.galleryImages[2]} alt="Villa Kaseh Ain" className="h-56 w-full object-cover md:h-full" />
             </div>
             <div className="overflow-hidden rounded-[2rem] md:col-span-2">
-              <img src={galleryImages[3]} alt="Villa Kaseh Ain" className="h-64 w-full object-cover md:h-[22rem]" />
+              <img src={content.galleryImages[3]} alt="Villa Kaseh Ain" className="h-64 w-full object-cover md:h-[22rem]" />
             </div>
           </div>
         </div>
@@ -204,7 +206,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
           </div>
 
           <div className="grid gap-4 md:grid-cols-3">
-            {roomTypes.map((room) => (
+            {content.roomTypes.map((room) => (
               <article key={room.id} className="lux-surface rounded-[1.75rem] p-6 md:p-7">
                 <p className="text-[10px] uppercase tracking-[0.28em] text-[#4c9085]">{room.period}</p>
                 <h3 className="mt-4 font-headline text-3xl">{room.label}</h3>
@@ -228,10 +230,10 @@ export function HomePage({ onNavigate }: HomePageProps) {
           <div className="text-[#231c17]">
             <p className="lux-kicker">Location</p>
             <h2 className="mt-4 font-headline text-4xl text-[#22312d] md:text-6xl">Close enough to arrive easily, rare enough to feel hidden.</h2>
-            <p className="mt-5 text-sm leading-7 text-[#625f58] md:text-base">{siteConfig.fullAddress}</p>
+            <p className="mt-5 text-sm leading-7 text-[#625f58] md:text-base">{content.siteConfig.fullAddress}</p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <a
-                href={siteConfig.mapsUrl}
+                href={content.siteConfig.mapsUrl}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center justify-center rounded-full bg-[#4c9085] px-7 py-4 text-[11px] font-semibold uppercase tracking-[0.24em] text-[#0f1d1a]"

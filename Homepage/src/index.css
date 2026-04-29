@@ -39,6 +39,17 @@
     text-rendering: optimizeLegibility;
     letter-spacing: 0.01em;
   }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  textarea {
+    resize: vertical;
+  }
 }
 
 @layer components {
