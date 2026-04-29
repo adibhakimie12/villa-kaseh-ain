@@ -59,7 +59,7 @@ export function buildNotificationRequest(
       emails.push({
         to: ownerRecipients,
         subject: baseSubject,
-        text: `${baseText}\n\nCustomer uploaded receipt and booking is awaiting verification.`,
+        text: `New Booking Receipt Submitted\nBooking ID: ${order.id}\nGuest: ${order.guestName}\n\n${baseText}\n\nCustomer uploaded receipt and booking is awaiting verification.`,
       });
     }
   }
@@ -77,22 +77,22 @@ export function buildNotificationRequest(
     }
 
     if (guestRecipients.length) {
-      const guestPaymentMessage =
-        order.paymentStatus === 'Paid Full'
-          ? 'Bayaran penuh anda telah disahkan.\n\nBooking anda kini fully paid.'
-          : order.paymentStatus === 'Deposit Paid'
-            ? `Deposit payment anda telah disahkan.\n\nBaki semasa: RM ${order.remainingBalance.toLocaleString()}.`
-            : 'Bayaran anda telah disahkan. Terima kasih.';
-
       emails.push({
         to: guestRecipients,
-        subject:
+        subject: 'Booking Confirmed – Villa Kaseh Ain',
+        text: [
+          `Guest Name: ${order.guestName}`,
+          `Booking ID: ${order.id}`,
+          `Check-in Date: ${order.checkIn}`,
+          `Check-out Date: ${order.checkOut}`,
+          `Amount Paid: RM ${order.amountPaid.toLocaleString()}`,
+          `Remaining Balance: RM ${order.remainingBalance.toLocaleString()}`,
+          `Contact WhatsApp: https://wa.me/${content.siteConfig.whatsappNumber}`,
+          '',
           order.paymentStatus === 'Paid Full'
-            ? `Villa Kaseh Ain full payment verified - ${order.id}`
-            : order.paymentStatus === 'Deposit Paid'
-              ? `Villa Kaseh Ain deposit payment verified - ${order.id}`
-              : `Villa Kaseh Ain payment verified - ${order.id}`,
-        text: `${baseText}\n\n${guestPaymentMessage}`,
+            ? 'Bayaran penuh anda telah disahkan. Booking anda kini fully paid.'
+            : 'Deposit payment anda telah disahkan. Booking anda kini confirmed.',
+        ].join('\n'),
       });
     }
   }

@@ -232,18 +232,23 @@ export function rejectManualPayment(order: BookingOrder, reason = 'Receipt rejec
   };
 }
 
-export function buildCustomerPaymentWhatsappMessage(order: BookingOrder, manualPayment: ManualPaymentSettings) {
+export function buildCustomerPaymentWhatsappMessage(order: BookingOrder, _manualPayment: ManualPaymentSettings) {
   const dueNow = getPaymentDueNow(order.totalAmount, order.depositAmount, order.paymentOptionSelected);
   return [
-    'Hi Villa Kaseh Ain, saya dah buat booking dan nak confirm payment.',
+    'Hi Villa Kaseh Ain,',
+    '',
+    'Saya telah membuat booking.',
+    '',
     `Booking ID: ${order.id}`,
     `Nama: ${order.guestName}`,
-    `Tarikh: ${order.checkIn} - ${order.checkOut}`,
-    `Pax: ${order.pax}`,
-    `Payment Option: ${order.paymentOptionSelected}`,
-    `Jumlah Bayar Sekarang: RM ${dueNow.toLocaleString()}`,
-    `Bank: ${manualPayment.bankName}`,
-    `No Akaun: ${manualPayment.accountNumber}`,
+    `Phone: ${order.phone}`,
+    `Check-in: ${order.checkIn}`,
+    `Check-out: ${order.checkOut}`,
+    `Jumlah Deposit: RM${dueNow.toLocaleString()}`,
+    '',
+    'Saya juga akan upload receipt pembayaran.',
+    '',
+    'Terima kasih.',
   ].join('\n');
 }
 
@@ -269,7 +274,7 @@ export function buildBookingEmailBody(order: BookingOrder, manualPayment: Manual
 
 export function buildNotificationSubject(event: BookingNotificationEvent, order: BookingOrder) {
   if (event === 'new-booking') return `[Booking ${order.id}] New booking received`;
-  if (event === 'receipt-uploaded') return `[Booking ${order.id}] Receipt uploaded`;
+  if (event === 'receipt-uploaded') return `New Booking Receipt Submitted - ${order.id}`;
   if (order.paymentStatus === 'Deposit Paid') return `[Booking ${order.id}] Deposit payment verified`;
   if (order.paymentStatus === 'Paid Full') return `[Booking ${order.id}] Full payment verified`;
   return `[Booking ${order.id}] Payment verified`;

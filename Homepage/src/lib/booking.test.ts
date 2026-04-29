@@ -210,11 +210,12 @@ const manualPayment: ManualPaymentSettings = {
 
 const paymentMessage = buildCustomerPaymentWhatsappMessage(orders[1], manualPayment);
 assert.ok(paymentMessage.includes('VKA-1002'));
-assert.ok(paymentMessage.includes('RM 500'));
-assert.ok(paymentMessage.includes('Maybank'));
+assert.ok(paymentMessage.includes('RM500'));
+assert.ok(paymentMessage.includes('Saya juga akan upload receipt pembayaran.'));
+assert.ok(paymentMessage.includes('Phone: 60199887766'));
 
 assert.equal(buildNotificationSubject('new-booking', orders[1]), '[Booking VKA-1002] New booking received');
-assert.equal(buildNotificationSubject('receipt-uploaded', orders[1]), '[Booking VKA-1002] Receipt uploaded');
+assert.equal(buildNotificationSubject('receipt-uploaded', orders[1]), 'New Booking Receipt Submitted - VKA-1002');
 assert.equal(buildNotificationSubject('payment-verified', verifiedDeposit), '[Booking VKA-1002] Deposit payment verified');
 assert.equal(buildNotificationSubject('payment-verified', verifiedFull), '[Booking VKA-1002] Full payment verified');
 assert.ok(buildNotificationText('new-booking', orders[1], manualPayment).includes('Booking ID: VKA-1002'));
@@ -236,19 +237,24 @@ const receiptNotification = buildNotificationRequest('receipt-uploaded', { ...or
 assert.ok(receiptNotification);
 assert.equal(receiptNotification?.emails.length, 1);
 assert.deepEqual(receiptNotification?.emails[0]?.to, ['owner@villakasehain.com']);
+assert.equal(receiptNotification?.emails[0]?.subject, 'New Booking Receipt Submitted - VKA-1002');
+assert.ok(receiptNotification?.emails[0]?.text.includes('Guest: Farhan'));
 
 const verifiedDepositNotification = buildNotificationRequest('payment-verified', verifiedDeposit, notificationContent);
 assert.ok(verifiedDepositNotification);
 assert.equal(verifiedDepositNotification?.emails.length, 2);
 assert.equal(verifiedDepositNotification?.emails[0]?.subject, '[Booking VKA-1002] Deposit payment verified');
-assert.ok(verifiedDepositNotification?.emails[1]?.text.includes('Deposit payment anda telah disahkan.'));
-assert.ok(verifiedDepositNotification?.emails[1]?.text.includes('Baki semasa: RM 1,300.'));
+assert.equal(verifiedDepositNotification?.emails[1]?.subject, 'Booking Confirmed – Villa Kaseh Ain');
+assert.ok(verifiedDepositNotification?.emails[1]?.text.includes('Guest Name: Farhan'));
+assert.ok(verifiedDepositNotification?.emails[1]?.text.includes('Remaining Balance: RM 1,300'));
+assert.ok(verifiedDepositNotification?.emails[1]?.text.includes('Booking anda kini confirmed.'));
 
 const verifiedFullNotification = buildNotificationRequest('payment-verified', verifiedFull, notificationContent);
 assert.ok(verifiedFullNotification);
 assert.equal(verifiedFullNotification?.emails.length, 2);
 assert.equal(verifiedFullNotification?.emails[0]?.subject, '[Booking VKA-1002] Full payment verified');
-assert.ok(verifiedFullNotification?.emails[1]?.text.includes('Bayaran penuh anda telah disahkan.'));
+assert.equal(verifiedFullNotification?.emails[1]?.subject, 'Booking Confirmed – Villa Kaseh Ain');
+assert.ok(verifiedFullNotification?.emails[1]?.text.includes('Amount Paid: RM 1,800'));
 assert.ok(verifiedFullNotification?.emails[1]?.text.includes('Booking anda kini fully paid.'));
 
 assert.equal(ADMIN_ROUTE, '/adminvka');

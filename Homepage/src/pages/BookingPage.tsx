@@ -30,8 +30,13 @@ export function BookingPage() {
   const [submittedOrder, setSubmittedOrder] = useState<BookingOrder | null>(null);
   const [paymentOptionSelected, setPaymentOptionSelected] = useState<PaymentOptionSelected>('Deposit');
   const [calendarOffset, setCalendarOffset] = useState(0);
+  const [copiedAccount, setCopiedAccount] = useState(false);
 
   const blockedDates = content.bookingSettings.blockedDates;
+  const activeSubmittedOrder = useMemo(
+    () => (submittedOrder ? content.bookingOrders.find((order) => order.id === submittedOrder.id) ?? submittedOrder : null),
+    [content.bookingOrders, submittedOrder],
+  );
 
   const nights = dayDiff(checkIn, checkOut);
   const guestOptions = useMemo(() => getPublicGuestOptions(), []);
@@ -123,12 +128,16 @@ export function BookingPage() {
   };
 
   const handleReceiptUpload = (file: File | undefined) => {
-    if (!file || !submittedOrder) return;
+    if (!file || !activeSubmittedOrder) return;
+    if (file.size > 5 * 1024 * 1024) {
+      window.alert('Receipt terlalu besar. Sila upload fail maksimum 5MB.');
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () => {
       const uploadedAt = new Date().toISOString();
       const nextOrder = {
-        ...submittedOrder,
+        ...activeSubmittedOrder,
         receiptImage: String(reader.result || ''),
         receiptUploadedAt: uploadedAt,
         paymentRejectedReason: '',
@@ -142,6 +151,40 @@ export function BookingPage() {
     };
     reader.readAsDataURL(file);
   };
+
+  const handleCopyAccountNumber = async () => {
+    try {
+      await navigator.clipboard.writeText(content.manualPayment.accountNumber);
+      setCopiedAccount(true);
+      window.setTimeout(() => setCopiedAccount(false), 1800);
+    } catch {
+      window.alert('Tak dapat copy nombor akaun sekarang. Sila copy secara manual.');
+    }
+  };
+
+  const amountDueNow = activeSubmittedOrder
+    ? getPaymentDueNow(activeSubmittedOrder.totalAmount, activeSubmittedOrder.depositAmount, activeSubmittedOrder.paymentOptionSelected)
+    : 0;
+  const receiptIsPdf = Boolean(activeSubmittedOrder?.receiptImage?.startsWith('data:application/pdf'));
+  const receiptBadge = activeSubmittedOrder?.paymentRejectedReason
+    ? {
+        tone: 'border-[#e4b1aa] bg-[#fff1ef] text-[#9b3f35]',
+        title: 'Please re-upload clearer receipt',
+        description: activeSubmittedOrder.paymentRejectedReason,
+      }
+    : activeSubmittedOrder?.paymentStatus === 'Deposit Paid' || activeSubmittedOrder?.paymentStatus === 'Paid Full'
+      ? {
+          tone: 'border-[#9ec8b7] bg-[#eef8f4] text-[#2d6e61]',
+          title: 'Booking Confirmed',
+          description: 'Payment has been reviewed and your selected dates are secured.',
+        }
+      : activeSubmittedOrder?.receiptImage
+        ? {
+            tone: 'border-[#ead38f] bg-[#fff7d7] text-[#7a6016]',
+            title: 'Receipt Submitted',
+            description: 'Waiting for admin verification.',
+          }
+        : null;
 
   const today = toIsoDate(new Date());
   const calendarAnchors = useMemo(() => {
@@ -395,9 +438,11 @@ export function BookingPage() {
                 );
               })}
             </div>
-            <p className="mt-3 text-xs text-on-surface-variant">
-              Booking hold will expire after {content.paymentRules.autoCancelAfterHours} hour if payment is not verified.
-            </p>
+            <div className="mt-4 rounded-2xl border border-[#d9c9b4] bg-white/55 px-4 py-3 text-sm text-on-surface-variant">
+              <span className="font-medium text-on-surface">
+                {'\u23f3'} Booking hold expires in {content.paymentRules.autoCancelAfterHours} hour if payment is not verified.
+              </span>
+            </div>
           </div>
 
           <div className="mt-6 space-y-4">
@@ -441,64 +486,126 @@ export function BookingPage() {
             </label>
           </div>
 
-          {submittedOrder ? (
+          {activeSubmittedOrder ? (
             <div className="mt-6 rounded-[1.75rem] border border-[#d9c9b4] bg-[#fff8ef] p-5">
               <div className="flex items-center gap-2 text-primary">
                 <CreditCard size={16} />
-                <p className="text-xs font-bold uppercase tracking-[0.2em]">Manual Payment Ready</p>
+                <p className="text-xs font-bold uppercase tracking-[0.2em]">Secure Booking Payment</p>
               </div>
-              <h3 className="mt-3 font-headline text-2xl">{submittedOrder.id}</h3>
+              <h3 className="mt-3 font-headline text-2xl">{activeSubmittedOrder.id}</h3>
               <p className="mt-2 text-sm text-on-surface-variant">
-                Transfer ke akaun owner atau scan QR, kemudian upload receipt untuk admin verify.
+                Reserve your selected dates with secure deposit payment. Booking will be confirmed after receipt verification.
               </p>
-              <div className="mt-4 rounded-2xl border border-stone-200/80 bg-white/45 p-4 text-sm">
-                <p className="font-semibold">{content.manualPayment.bankName}</p>
-                <p className="mt-1 text-on-surface-variant">{content.manualPayment.accountHolderName}</p>
-                <p className="mt-1 text-lg font-bold text-primary">{content.manualPayment.accountNumber}</p>
-                <p className="mt-3 text-xs leading-relaxed text-on-surface-variant">{content.manualPayment.instructions}</p>
-                {content.manualPayment.qrImage ? (
-                  <img src={content.manualPayment.qrImage} alt="Owner payment QR" className="mt-4 aspect-square w-full rounded-2xl object-cover" />
-                ) : null}
+              <div className="mt-4 grid gap-2 text-sm text-on-surface-variant">
+                {[
+                  'Booking confirmation within 15 mins - 1 hour',
+                  'Dates reserved after successful receipt review',
+                  'Official receipt sent via WhatsApp / Email',
+                  'Support available daily',
+                ].map((item) => (
+                  <div key={item} className="flex items-start gap-2">
+                    <CheckCircle2 size={16} className="mt-0.5 text-[#5f9788]" />
+                    <span>{item}</span>
+                  </div>
+                ))}
               </div>
-              <div className="mt-4 space-y-2 text-sm">
+              <div className="mt-4 rounded-2xl border border-stone-200/80 bg-white/45 p-4 text-sm">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-on-surface-variant">Official Booking Account</p>
+                <div className="mt-4 space-y-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.18em] text-on-surface-variant">Bank Name</p>
+                    <p className="mt-1 font-semibold">{content.manualPayment.bankName}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.18em] text-on-surface-variant">Account Holder</p>
+                    <p className="mt-1 text-on-surface-variant">{content.manualPayment.accountHolderName}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.18em] text-on-surface-variant">Account Number</p>
+                    <div className="mt-1 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="text-lg font-bold text-primary">{content.manualPayment.accountNumber}</p>
+                      <button
+                        type="button"
+                        onClick={handleCopyAccountNumber}
+                        className="inline-flex min-h-11 items-center justify-center rounded-full border border-stone-300 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.18em] text-on-surface"
+                      >
+                        {copiedAccount ? 'Copied' : 'Copy Number'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <p className="mt-3 text-xs leading-relaxed text-on-surface-variant">{content.manualPayment.instructions}</p>
+                <div className="mt-4 rounded-2xl border border-stone-200/80 bg-white/60 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-on-surface-variant">Quick Pay QR</p>
+                  {content.manualPayment.qrImage ? (
+                    <img src={content.manualPayment.qrImage} alt="Owner payment QR" className="mt-3 aspect-square w-full rounded-2xl object-cover" />
+                  ) : (
+                    <p className="mt-3 text-xs text-on-surface-variant">DuitNow QR / bank QR akan dipaparkan di sini bila tersedia.</p>
+                  )}
+                </div>
+              </div>
+              <div className="mt-4 rounded-2xl border border-stone-200/80 bg-white/45 p-4 text-sm">
                 <div className="flex justify-between">
                   <span>Payment Option</span>
-                  <span>{submittedOrder.paymentOptionSelected}</span>
+                  <span>{activeSubmittedOrder.paymentOptionSelected}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="mt-2 flex justify-between">
                   <span>Amount Due Now</span>
-                  <span>{`RM ${getPaymentDueNow(submittedOrder.totalAmount, submittedOrder.depositAmount, submittedOrder.paymentOptionSelected).toLocaleString()}`}</span>
+                  <span>{`RM ${amountDueNow.toLocaleString()}`}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Balance</span>
-                  <span>{`RM ${submittedOrder.remainingBalance.toLocaleString()}`}</span>
+                <div className="mt-2 flex justify-between">
+                  <span>Remaining Balance</span>
+                  <span>{`RM ${activeSubmittedOrder.remainingBalance.toLocaleString()}`}</span>
                 </div>
+                <p className="mt-4 text-xs leading-relaxed text-on-surface-variant">
+                  Remaining balance can be settled before check-in or during arrival based on arrangement.
+                </p>
               </div>
               <label className="mt-4 block">
                 <span className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Upload Receipt</span>
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/png,image/jpeg,application/pdf"
                   onChange={(event) => handleReceiptUpload(event.target.files?.[0])}
                   className="lux-inset mt-2 w-full rounded-2xl px-4 py-3 text-sm outline-none"
                 />
+                <p className="mt-2 text-xs text-on-surface-variant">Accepted: JPG, PNG, PDF</p>
+                <p className="text-xs text-on-surface-variant">Max size: 5MB</p>
               </label>
-              {submittedOrder.receiptImage ? (
+              {receiptBadge ? (
+                <div className={`mt-4 rounded-2xl border p-4 ${receiptBadge.tone}`}>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em]">{receiptBadge.title}</p>
+                  <p className="mt-2 text-sm">{receiptBadge.description}</p>
+                </div>
+              ) : null}
+              {activeSubmittedOrder.receiptImage ? (
                 <div className="mt-4 rounded-2xl border border-[#9ec8b7] bg-[#eef8f4] p-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Receipt uploaded</p>
-                  <img src={submittedOrder.receiptImage} alt="Uploaded payment receipt" className="mt-3 max-h-56 w-full rounded-xl object-contain" />
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Uploaded Receipt</p>
+                  {receiptIsPdf ? (
+                    <a
+                      href={activeSubmittedOrder.receiptImage}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-3 inline-flex min-h-11 items-center rounded-full border border-[#9ec8b7] bg-white px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-primary"
+                    >
+                      Open Uploaded PDF
+                    </a>
+                  ) : (
+                    <img src={activeSubmittedOrder.receiptImage} alt="Uploaded payment receipt" className="mt-3 max-h-56 w-full rounded-xl object-contain" />
+                  )}
                 </div>
               ) : null}
               <a
                 href={`https://wa.me/${content.automationSettings.adminAlerts.ownerWhatsappNumber || content.siteConfig.whatsappNumber}?text=${encodeURIComponent(
-                  buildCustomerPaymentWhatsappMessage(submittedOrder, content.manualPayment),
+                  buildCustomerPaymentWhatsappMessage(activeSubmittedOrder, content.manualPayment),
                 )}`}
                 target="_blank"
                 rel="noreferrer"
-                className="mt-4 inline-flex w-full items-center justify-center rounded-full bg-[#22312d] px-6 py-4 text-xs font-bold uppercase tracking-[0.2em] text-white"
+                className="mt-4 inline-flex w-full items-center justify-center rounded-full bg-[#22312d] px-6 py-4 text-xs font-bold uppercase tracking-[0.2em] text-white shadow-[0_18px_45px_rgba(34,49,45,0.18)] md:shadow-none lg:shadow-none max-md:fixed max-md:bottom-4 max-md:left-4 max-md:right-4 max-md:z-30"
               >
-                WhatsApp Admin
+                WhatsApp Confirmation
               </a>
+              <p className="mt-4 text-center text-xs text-on-surface-variant max-md:mb-20">Your booking information is handled privately and securely.</p>
             </div>
           ) : null}
 
