@@ -186,11 +186,14 @@ assert.ok(paymentMessage.includes('Maybank'));
 
 assert.equal(buildNotificationSubject('new-booking', orders[1]), '[Booking VKA-1002] New booking received');
 assert.equal(buildNotificationSubject('receipt-uploaded', orders[1]), '[Booking VKA-1002] Receipt uploaded');
-assert.equal(buildNotificationSubject('payment-verified', orders[1]), '[Booking VKA-1002] Payment verified');
+assert.equal(buildNotificationSubject('payment-verified', verifiedDeposit), '[Booking VKA-1002] Deposit payment verified');
+assert.equal(buildNotificationSubject('payment-verified', verifiedFull), '[Booking VKA-1002] Full payment verified');
 assert.ok(buildNotificationText('new-booking', orders[1], manualPayment).includes('Booking ID: VKA-1002'));
 assert.ok(buildNotificationText('new-booking', orders[1], manualPayment).includes('Amount Due Now: RM 500'));
 assert.ok(buildNotificationText('receipt-uploaded', orders[1], manualPayment).includes('Receipt uploaded'));
 assert.ok(buildNotificationText('payment-verified', verifiedDeposit, manualPayment).includes('Payment Status: Deposit Paid'));
+assert.ok(buildNotificationText('payment-verified', verifiedDeposit, manualPayment).includes('Deposit payment has been verified by admin.'));
+assert.ok(buildNotificationText('payment-verified', verifiedFull, manualPayment).includes('Full payment has been verified by admin.'));
 
 const notificationContent = normalizeSiteContent({
   manualPayment,
@@ -204,6 +207,20 @@ const receiptNotification = buildNotificationRequest('receipt-uploaded', { ...or
 assert.ok(receiptNotification);
 assert.equal(receiptNotification?.emails.length, 1);
 assert.deepEqual(receiptNotification?.emails[0]?.to, ['owner@villakasehain.com']);
+
+const verifiedDepositNotification = buildNotificationRequest('payment-verified', verifiedDeposit, notificationContent);
+assert.ok(verifiedDepositNotification);
+assert.equal(verifiedDepositNotification?.emails.length, 2);
+assert.equal(verifiedDepositNotification?.emails[0]?.subject, '[Booking VKA-1002] Deposit payment verified');
+assert.ok(verifiedDepositNotification?.emails[1]?.text.includes('Deposit payment anda telah disahkan.'));
+assert.ok(verifiedDepositNotification?.emails[1]?.text.includes('Baki semasa: RM 1,300.'));
+
+const verifiedFullNotification = buildNotificationRequest('payment-verified', verifiedFull, notificationContent);
+assert.ok(verifiedFullNotification);
+assert.equal(verifiedFullNotification?.emails.length, 2);
+assert.equal(verifiedFullNotification?.emails[0]?.subject, '[Booking VKA-1002] Full payment verified');
+assert.ok(verifiedFullNotification?.emails[1]?.text.includes('Bayaran penuh anda telah disahkan.'));
+assert.ok(verifiedFullNotification?.emails[1]?.text.includes('Booking anda kini fully paid.'));
 
 assert.equal(ADMIN_ROUTE, '/adminvka');
 assert.equal(normalizePath('/adminvka'), '/adminvka');

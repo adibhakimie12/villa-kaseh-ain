@@ -270,6 +270,8 @@ export function buildBookingEmailBody(order: BookingOrder, manualPayment: Manual
 export function buildNotificationSubject(event: BookingNotificationEvent, order: BookingOrder) {
   if (event === 'new-booking') return `[Booking ${order.id}] New booking received`;
   if (event === 'receipt-uploaded') return `[Booking ${order.id}] Receipt uploaded`;
+  if (order.paymentStatus === 'Deposit Paid') return `[Booking ${order.id}] Deposit payment verified`;
+  if (order.paymentStatus === 'Paid Full') return `[Booking ${order.id}] Full payment verified`;
   return `[Booking ${order.id}] Payment verified`;
 }
 
@@ -297,7 +299,13 @@ export function buildNotificationText(event: BookingNotificationEvent, order: Bo
   }
 
   if (event === 'payment-verified') {
-    lines.unshift('Payment has been verified by admin.');
+    lines.unshift(
+      order.paymentStatus === 'Paid Full'
+        ? 'Full payment has been verified by admin.'
+        : order.paymentStatus === 'Deposit Paid'
+          ? 'Deposit payment has been verified by admin.'
+          : 'Payment has been verified by admin.',
+    );
   }
 
   if (event === 'new-booking') {
