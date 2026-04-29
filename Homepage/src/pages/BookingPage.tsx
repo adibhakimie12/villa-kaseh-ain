@@ -6,10 +6,13 @@ import {
   buildCustomerPaymentWhatsappMessage,
   createBookingOrder,
   dayDiff,
+  getExtraGuestCharge,
   getAllowedPaymentOptions,
   getBookingBalance,
   getPaymentDueNow,
   getAvailabilityStateForDate,
+  getPublicGuestOptions,
+  selectBookingCalendarDate,
 } from '../lib/booking';
 import type { BookingOrder, PaymentOptionSelected } from '../lib/siteContent';
 
@@ -17,7 +20,7 @@ export function BookingPage() {
   const { content, updateContent } = useSiteContent();
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
-  const [guestCount, setGuestCount] = useState(6);
+  const [guestCount, setGuestCount] = useState(20);
   const [selectedRate, setSelectedRate] = useState(content.roomTypes[0]);
   const [guestName, setGuestName] = useState('');
   const [phone, setPhone] = useState('');
@@ -29,6 +32,7 @@ export function BookingPage() {
   const blockedDates = content.bookingSettings.blockedDates;
 
   const nights = dayDiff(checkIn, checkOut);
+  const guestOptions = useMemo(() => getPublicGuestOptions(), []);
   const maxIncludedGuests = 25;
   const extraGuestRatePerPersonPerNight = 50;
   const extraGuests = Math.max(guestCount - maxIncludedGuests, 0);
@@ -46,7 +50,7 @@ export function BookingPage() {
   const summary = useMemo(() => {
     const subtotal = nights * selectedRate.price;
     const service = subtotal * 0.1;
-    const extraGuestCharge = extraGuests * extraGuestRatePerPersonPerNight * nights;
+    const extraGuestCharge = getExtraGuestCharge(guestCount, nights, extraGuestRatePerPersonPerNight, maxIncludedGuests);
     const tax = nights > 0 ? 40 : 0;
     return {
       subtotal,
@@ -55,7 +59,7 @@ export function BookingPage() {
       tax,
       total: subtotal + service + extraGuestCharge + tax,
     };
-  }, [extraGuests, nights, selectedRate.price]);
+  }, [guestCount, nights, selectedRate.price]);
 
   const allowedPaymentOptions = useMemo(() => getAllowedPaymentOptions(content.paymentRules), [content.paymentRules]);
   const bookingBalance = useMemo(() => getBookingBalance(summary.total, content.paymentRules), [content.paymentRules, summary.total]);
@@ -133,6 +137,13 @@ export function BookingPage() {
   const today = toIsoDate(new Date());
   const calendarAnchors = [new Date(), new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1)];
 
+  const handleCalendarDateClick = (isoDate: string, isAvailable: boolean, isCurrentMonth: boolean) => {
+    if (!isAvailable || !isCurrentMonth || isoDate < today) return;
+    const nextSelection = selectBookingCalendarDate({ checkIn, checkOut, selectedDate: isoDate });
+    setCheckIn(nextSelection.checkIn);
+    setCheckOut(nextSelection.checkOut);
+  };
+
   return (
     <main className="bg-[#eef2f5] px-4 pb-20 pt-28 md:px-8">
       <div className="mx-auto grid w-full max-w-7xl gap-8 lg:grid-cols-[1.5fr_1fr]">
@@ -167,14 +178,11 @@ export function BookingPage() {
                   value={guestCount}
                   onChange={(e) => setGuestCount(Number(e.target.value))}
                 >
-                  <option value={4}>4 Guests</option>
-                  <option value={6}>6 Guests</option>
-                  <option value={8}>8 Guests</option>
-                  <option value={10}>10 Guests</option>
-                  <option value={15}>15 Guests</option>
-                  <option value={20}>20 Guests</option>
-                  <option value={25}>25 Guests (Max Included)</option>
-                  <option value={30}>30 Guests (Extra Charge)</option>
+                  {guestOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option === 30 ? `${option} Guests (Extra Charge)` : `${option} Guests`}
+                    </option>
+                  ))}
                 </select>
               </div>
             </label>
@@ -221,8 +229,11 @@ export function BookingPage() {
                       const isPast = isoDate < today;
                       const isSelected = isoDate === checkIn || isoDate === checkOut;
                       return (
-                        <div
+                        <button
+                          type="button"
                           key={isoDate}
+                          onClick={() => handleCalendarDateClick(isoDate, availability.state === 'available', isCurrentMonth)}
+                          disabled={!isCurrentMonth || availability.state !== 'available' || isPast}
                           className={`flex aspect-square items-center justify-center rounded-2xl text-sm ${
                             !isCurrentMonth
                               ? 'bg-transparent text-stone-300'
@@ -235,10 +246,10 @@ export function BookingPage() {
                                 : isSelected
                                   ? 'bg-primary font-semibold text-white'
                                   : 'lux-inset text-on-surface'
-                          } ${isPast ? 'opacity-45' : ''}`}
+                          } ${isPast ? 'opacity-45' : ''} ${isCurrentMonth && availability.state === 'available' && !isPast ? 'cursor-pointer transition hover:ring-2 hover:ring-primary/30' : 'cursor-not-allowed'}`}
                         >
                           {date.getDate()}
-                        </div>
+                        </button>
                       );
                     })}
                   </div>
@@ -346,7 +357,7 @@ export function BookingPage() {
               })}
             </div>
             <p className="mt-3 text-xs text-on-surface-variant">
-              Unpaid booking will expire after {content.paymentRules.autoCancelAfterHours} hour.
+              Booking hold will expire after {content.paymentRules.autoCancelAfterHours} hour if payment is not verified.
             </p>
           </div>
 
@@ -460,7 +471,7 @@ export function BookingPage() {
               canSubmitBooking ? 'bg-primary text-white' : 'cursor-not-allowed bg-stone-300 text-stone-500'
             }`}
           >
-            {isSelectionAvailable ? 'Create Pending Booking' : 'Selected Dates Unavailable'}
+            {checkIn && checkOut ? (isSelectionAvailable ? 'Create Pending Booking' : 'Selected Dates Unavailable') : 'Select Stay Dates'}
           </button>
 
           <a
@@ -480,7 +491,7 @@ export function BookingPage() {
             <li className="flex items-center gap-2"><CheckCircle2 size={16} className="text-primary" /> Fast response from host</li>
             <li className="flex items-center gap-2"><CheckCircle2 size={16} className="text-primary" /> Flexible inquiry for events</li>
             <li className="flex items-center gap-2"><CheckCircle2 size={16} className="text-primary" /> Family-friendly setup</li>
-            <li className="flex items-center gap-2"><CheckCircle2 size={16} className="text-primary" /> 30 guests available with extra charge</li>
+            <li className="flex items-center gap-2"><CheckCircle2 size={16} className="text-primary" /> Extra charge applies above 25 guests</li>
           </ul>
         </aside>
       </div>

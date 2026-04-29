@@ -2,10 +2,13 @@ import assert from 'node:assert/strict';
 import {
   buildCustomerPaymentWhatsappMessage,
   buildBookingMetrics,
+  getExtraGuestCharge,
   getPaymentActionLabel,
+  getPublicGuestOptions,
   getAllowedPaymentOptions,
   getAvailabilityStateForDate,
   getBookingBalance,
+  selectBookingCalendarDate,
   renderBookingTemplate,
   verifyManualPayment,
 } from './booking';
@@ -181,5 +184,25 @@ assert.ok(paymentMessage.includes('Maybank'));
 assert.equal(ADMIN_ROUTE, '/adminvka');
 assert.equal(normalizePath('/adminvka'), '/adminvka');
 assert.equal(normalizePath('/admin'), '/');
+
+assert.deepEqual(getPublicGuestOptions(), [20, 25, 30]);
+assert.equal(getExtraGuestCharge(25, 2, 50), 0);
+assert.equal(getExtraGuestCharge(30, 2, 50), 500);
+assert.deepEqual(selectBookingCalendarDate({ checkIn: '', checkOut: '', selectedDate: '2026-05-10' }), {
+  checkIn: '2026-05-10',
+  checkOut: '',
+});
+assert.deepEqual(selectBookingCalendarDate({ checkIn: '2026-05-10', checkOut: '', selectedDate: '2026-05-12' }), {
+  checkIn: '2026-05-10',
+  checkOut: '2026-05-12',
+});
+assert.deepEqual(selectBookingCalendarDate({ checkIn: '2026-05-10', checkOut: '2026-05-12', selectedDate: '2026-05-15' }), {
+  checkIn: '2026-05-15',
+  checkOut: '',
+});
+assert.deepEqual(selectBookingCalendarDate({ checkIn: '2026-05-10', checkOut: '', selectedDate: '2026-05-09' }), {
+  checkIn: '2026-05-09',
+  checkOut: '',
+});
 
 console.log('booking helper tests passed');

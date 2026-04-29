@@ -9,6 +9,28 @@ export interface AvailabilityResult {
   booking?: BookingOrder;
 }
 
+export function getPublicGuestOptions() {
+  return [20, 25, 30];
+}
+
+export function getExtraGuestCharge(guestCount: number, nights: number, ratePerPersonPerNight: number, includedGuests = 25) {
+  return Math.max(guestCount - includedGuests, 0) * ratePerPersonPerNight * Math.max(nights, 0);
+}
+
+export function selectBookingCalendarDate(input: { checkIn: string; checkOut: string; selectedDate: string }) {
+  if (!input.checkIn || input.checkOut || input.selectedDate <= input.checkIn) {
+    return {
+      checkIn: input.selectedDate,
+      checkOut: '',
+    };
+  }
+
+  return {
+    checkIn: input.checkIn,
+    checkOut: input.selectedDate,
+  };
+}
+
 export function dayDiff(checkIn: string, checkOut: string) {
   if (!checkIn || !checkOut) return 0;
   const start = new Date(`${checkIn}T00:00:00`);
