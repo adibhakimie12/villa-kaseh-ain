@@ -218,22 +218,6 @@ export function HomePage({ onNavigate }: HomePageProps) {
               </article>
             ))}
           </div>
-
-          <div className="mt-6 grid max-w-3xl gap-3 sm:grid-cols-2">
-            {[
-              ['Kapasiti', content.stayInformation.capacityNotes],
-              ['Masa', content.stayInformation.timingNotes],
-            ].map(([title, notes]) => (
-              <article key={title} className="lux-surface rounded-[1.25rem] p-4">
-                <p className="text-[10px] uppercase tracking-[0.24em] text-[#4c9085]">{title}</p>
-                <div className="mt-3 space-y-2 text-xs leading-6 text-on-surface-variant">
-                  {(notes as string[]).map((note) => (
-                    <p key={note}>{note}</p>
-                  ))}
-                </div>
-              </article>
-            ))}
-          </div>
         </div>
       </section>
 
