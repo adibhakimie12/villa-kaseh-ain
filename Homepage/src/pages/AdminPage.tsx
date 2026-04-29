@@ -23,7 +23,6 @@ import { eachDateInRange, formatLongDate, monthMatrix, toIsoDate } from '../lib/
 import { buildNotificationRequest, sendNotificationRequest } from '../lib/notifications';
 import {
   BookingFilter,
-  buildPaymentLink,
   buildBookingEmailBody,
   buildBookingMetrics,
   buildBookingTrend,
@@ -35,6 +34,7 @@ import {
   updateBookingStatus,
   verifyManualPayment,
 } from '../lib/booking';
+import { getEffectivePaymentGateway } from '../lib/siteContent';
 import type {
   AutomationSettings,
   BookingOrder,
@@ -208,6 +208,7 @@ export function AdminPage() {
 
   const today = toIsoDate(new Date());
   const blockedDates = content.bookingSettings.blockedDates;
+  const effectivePaymentGateway = getEffectivePaymentGateway(content);
   const selectedBooking = content.bookingOrders.find((order) => order.id === selectedBookingId) ?? null;
   const filteredBookings = useMemo(
     () => filterBookings(content.bookingOrders, activeFilter, today),
@@ -404,7 +405,7 @@ export function AdminPage() {
       return;
     }
 
-    if (content.paymentGateway.activeGateway === 'manual' || !content.manualPayment.enabled) {
+    if (effectivePaymentGateway === 'manual') {
       window.alert(
         [
           `Manual payment aktif untuk ${selectedBooking.id}.`,
@@ -417,22 +418,13 @@ export function AdminPage() {
       return;
     }
 
-    if (content.paymentGateway.activeGateway === 'billplz' && !content.paymentGateway.billplz.enabled) {
-      window.alert('Billplz belum diaktifkan. Guna manual transfer atau hidupkan gateway dulu.');
-      return;
-    }
-
-    if (content.paymentGateway.activeGateway === 'senangPay' && !content.paymentGateway.senangPay.enabled) {
-      window.alert('senangPay belum diaktifkan. Guna manual transfer atau hidupkan gateway dulu.');
-      return;
-    }
-
-    if (content.paymentGateway.activeGateway === 'stripe' && !content.paymentGateway.stripe.enabled) {
-      window.alert('Stripe belum diaktifkan. Guna manual transfer atau hidupkan gateway dulu.');
-      return;
-    }
-
-    window.open(buildPaymentLink(selectedBooking, content.paymentGateway.activeGateway), '_blank', 'noopener,noreferrer');
+    window.alert(
+      [
+        `${effectivePaymentGateway} dipilih sebagai gateway aktif.`,
+        'Tetapi payment gateway live sebenar belum disambung dalam app ini lagi.',
+        'Buat masa sekarang, teruskan guna manual transfer untuk booking production.',
+      ].join('\n'),
+    );
   };
 
   const handleSaveTemplate = () => {
@@ -754,6 +746,14 @@ export function AdminPage() {
                 <option value="stripe">Stripe</option>
               </select>
             </label>
+            <p className="mt-3 text-xs text-on-surface-variant">
+              Current live mode:
+              {' '}
+              <span className="font-semibold text-on-surface">
+                {effectivePaymentGateway === 'manual' ? 'Manual Transfer' : effectivePaymentGateway}
+              </span>
+              . Jika gateway dipilih tetapi belum lengkap setup, sistem akan fallback ke manual transfer.
+            </p>
 
             <div className="mt-4 space-y-4 rounded-[1.5rem] border border-stone-200/80 p-4 opacity-70">
               <p className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Future Gateways</p>

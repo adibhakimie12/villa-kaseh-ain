@@ -162,6 +162,8 @@ export interface SiteContent {
   futureModules: FutureModuleSettings;
 }
 
+type PaymentContentLike = Pick<SiteContent, 'manualPayment' | 'paymentGateway'>;
+
 export const STORAGE_KEY = 'villa-kaseh-ain-site-content';
 export const ADMIN_SESSION_KEY = 'villa-kaseh-ain-admin-session';
 export const ADMIN_PASSCODE = 'villa2026';
@@ -239,7 +241,7 @@ export const defaultSiteContent: SiteContent = {
   paymentGateway: {
     activeGateway: 'manual',
     billplz: {
-      enabled: true,
+      enabled: false,
       apiKey: '',
       xSignature: '',
       collectionId: '',
@@ -293,6 +295,39 @@ export const defaultSiteContent: SiteContent = {
     googleCalendarSync: false,
   },
 };
+
+export function isManualPaymentConfigured(content: PaymentContentLike) {
+  return Boolean(
+    content.manualPayment.enabled
+      && content.manualPayment.bankName.trim()
+      && content.manualPayment.accountHolderName.trim()
+      && content.manualPayment.accountNumber.trim(),
+  );
+}
+
+export function isGatewayConfigured(content: PaymentContentLike, gateway: GatewayProvider) {
+  if (gateway === 'manual') {
+    return isManualPaymentConfigured(content);
+  }
+
+  if (gateway === 'billplz') {
+    const settings = content.paymentGateway.billplz;
+    return Boolean(settings.enabled && settings.apiKey.trim() && settings.xSignature.trim() && settings.collectionId.trim());
+  }
+
+  if (gateway === 'senangPay') {
+    const settings = content.paymentGateway.senangPay;
+    return Boolean(settings.enabled && settings.merchantId.trim() && settings.secretKey.trim());
+  }
+
+  const settings = content.paymentGateway.stripe;
+  return Boolean(settings.enabled && settings.publishableKey.trim() && settings.secretKey.trim());
+}
+
+export function getEffectivePaymentGateway(content: PaymentContentLike): GatewayProvider {
+  const activeGateway = content.paymentGateway.activeGateway;
+  return isGatewayConfigured(content, activeGateway) ? activeGateway : 'manual';
+}
 
 function uniqueSortedDates(dates: string[]) {
   return Array.from(new Set(dates.filter(Boolean))).sort((a, b) => a.localeCompare(b));

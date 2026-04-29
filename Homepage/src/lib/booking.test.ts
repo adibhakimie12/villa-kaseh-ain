@@ -14,7 +14,15 @@ import {
   renderBookingTemplate,
   verifyManualPayment,
 } from './booking';
-import { defaultSiteContent, normalizeSiteContent, type BookingOrder, type ManualPaymentSettings, type PaymentRules } from './siteContent';
+import {
+  defaultSiteContent,
+  getEffectivePaymentGateway,
+  isGatewayConfigured,
+  normalizeSiteContent,
+  type BookingOrder,
+  type ManualPaymentSettings,
+  type PaymentRules,
+} from './siteContent';
 import { buildNotificationRequest } from './notifications';
 import { ADMIN_ROUTE, normalizePath } from './routes';
 
@@ -136,6 +144,27 @@ assert.equal(defaultSiteContent.automationSettings.adminAlerts.ownerEmail, 'owne
 assert.equal(defaultSiteContent.automationSettings.adminAlerts.ownerWhatsappNumber, '60166341564');
 assert.equal(defaultSiteContent.manualPayment.bankName, 'Maybank');
 assert.equal(defaultSiteContent.paymentGateway.activeGateway, 'manual');
+assert.equal(isGatewayConfigured(defaultSiteContent, 'manual'), true);
+assert.equal(isGatewayConfigured(defaultSiteContent, 'billplz'), false);
+assert.equal(getEffectivePaymentGateway(defaultSiteContent), 'manual');
+assert.equal(
+  getEffectivePaymentGateway(
+    normalizeSiteContent({
+      paymentGateway: {
+        ...defaultSiteContent.paymentGateway,
+        activeGateway: 'billplz',
+        billplz: {
+          enabled: true,
+          apiKey: 'api',
+          xSignature: 'sig',
+          collectionId: 'col',
+          mode: 'Live',
+        },
+      },
+    }),
+  ),
+  'billplz',
+);
 assert.equal(
   normalizeSiteContent({
     manualPayment: {
