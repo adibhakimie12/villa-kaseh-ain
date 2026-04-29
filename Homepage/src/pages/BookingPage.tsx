@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { CalendarDays, Users, CheckCircle2, CreditCard, MessageCircle } from 'lucide-react';
 import { useSiteContent } from '../context/SiteContentContext';
 import { eachNightInStay, formatLongDate, monthMatrix, toIsoDate } from '../lib/date';
+import { buildNotificationRequest, sendNotificationRequest } from '../lib/notifications';
 import {
   buildCustomerPaymentWhatsappMessage,
   createBookingOrder,
@@ -107,6 +108,7 @@ export function BookingPage() {
       bookingOrders: [order, ...current.bookingOrders],
     }));
     setSubmittedOrder(order);
+    void sendNotificationRequest(buildNotificationRequest('new-booking', order, content));
   };
 
   const updateSubmittedOrder = (updater: (order: BookingOrder) => BookingOrder) => {
@@ -120,16 +122,22 @@ export function BookingPage() {
   };
 
   const handleReceiptUpload = (file: File | undefined) => {
-    if (!file) return;
+    if (!file || !submittedOrder) return;
     const reader = new FileReader();
     reader.onload = () => {
-      updateSubmittedOrder((order) => ({
-        ...order,
+      const uploadedAt = new Date().toISOString();
+      const nextOrder = {
+        ...submittedOrder,
         receiptImage: String(reader.result || ''),
-        receiptUploadedAt: new Date().toISOString(),
+        receiptUploadedAt: uploadedAt,
         paymentRejectedReason: '',
-        updatedAt: new Date().toISOString(),
+        updatedAt: uploadedAt,
+      };
+
+      updateSubmittedOrder((order) => ({
+        ...nextOrder,
       }));
+      void sendNotificationRequest(buildNotificationRequest('receipt-uploaded', nextOrder, content));
     };
     reader.readAsDataURL(file);
   };

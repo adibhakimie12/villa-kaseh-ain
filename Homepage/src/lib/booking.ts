@@ -3,6 +3,7 @@ import type { BookingOrder, BookingStatus, ManualPaymentSettings, PaymentOptionS
 
 export type BookingFilter = 'Today' | 'Upcoming' | 'Paid' | 'Pending' | 'Cancelled';
 export type AvailabilityState = 'available' | 'booked' | 'pending' | 'blocked';
+export type BookingNotificationEvent = 'new-booking' | 'receipt-uploaded' | 'payment-verified';
 
 export interface AvailabilityResult {
   state: AvailabilityState;
@@ -264,6 +265,46 @@ export function buildBookingEmailBody(order: BookingOrder, manualPayment: Manual
     `Account Holder: ${manualPayment.accountHolderName}`,
     `Account Number: ${manualPayment.accountNumber}`,
   ].join('\n');
+}
+
+export function buildNotificationSubject(event: BookingNotificationEvent, order: BookingOrder) {
+  if (event === 'new-booking') return `[Booking ${order.id}] New booking received`;
+  if (event === 'receipt-uploaded') return `[Booking ${order.id}] Receipt uploaded`;
+  return `[Booking ${order.id}] Payment verified`;
+}
+
+export function buildNotificationText(event: BookingNotificationEvent, order: BookingOrder, manualPayment: ManualPaymentSettings) {
+  const dueNow = getPaymentDueNow(order.totalAmount, order.depositAmount, order.paymentOptionSelected);
+  const lines = [
+    `Booking ID: ${order.id}`,
+    `Guest: ${order.guestName}`,
+    `Phone: ${order.phone}`,
+    `Email: ${order.email}`,
+    `Check-in: ${order.checkIn}`,
+    `Check-out: ${order.checkOut}`,
+    `Pax: ${order.pax}`,
+    `Payment Option: ${order.paymentOptionSelected}`,
+    `Payment Status: ${order.paymentStatus}`,
+    `Amount Due Now: RM ${dueNow.toLocaleString()}`,
+    `Amount Paid: RM ${order.amountPaid.toLocaleString()}`,
+    `Remaining Balance: RM ${order.remainingBalance.toLocaleString()}`,
+    `Bank: ${manualPayment.bankName}`,
+    `Account Number: ${manualPayment.accountNumber}`,
+  ];
+
+  if (event === 'receipt-uploaded') {
+    lines.unshift('Receipt uploaded by customer.');
+  }
+
+  if (event === 'payment-verified') {
+    lines.unshift('Payment has been verified by admin.');
+  }
+
+  if (event === 'new-booking') {
+    lines.unshift('New booking created.');
+  }
+
+  return lines.join('\n');
 }
 
 export function renderBookingTemplate(template: string, order: BookingOrder) {

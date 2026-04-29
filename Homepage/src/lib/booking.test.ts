@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import {
+  buildNotificationSubject,
+  buildNotificationText,
   buildCustomerPaymentWhatsappMessage,
   buildBookingMetrics,
   getExtraGuestCharge,
@@ -13,6 +15,7 @@ import {
   verifyManualPayment,
 } from './booking';
 import { defaultSiteContent, normalizeSiteContent, type BookingOrder, type ManualPaymentSettings, type PaymentRules } from './siteContent';
+import { buildNotificationRequest } from './notifications';
 import { ADMIN_ROUTE, normalizePath } from './routes';
 
 const orders: BookingOrder[] = [
@@ -180,6 +183,27 @@ const paymentMessage = buildCustomerPaymentWhatsappMessage(orders[1], manualPaym
 assert.ok(paymentMessage.includes('VKA-1002'));
 assert.ok(paymentMessage.includes('RM 500'));
 assert.ok(paymentMessage.includes('Maybank'));
+
+assert.equal(buildNotificationSubject('new-booking', orders[1]), '[Booking VKA-1002] New booking received');
+assert.equal(buildNotificationSubject('receipt-uploaded', orders[1]), '[Booking VKA-1002] Receipt uploaded');
+assert.equal(buildNotificationSubject('payment-verified', orders[1]), '[Booking VKA-1002] Payment verified');
+assert.ok(buildNotificationText('new-booking', orders[1], manualPayment).includes('Booking ID: VKA-1002'));
+assert.ok(buildNotificationText('new-booking', orders[1], manualPayment).includes('Amount Due Now: RM 500'));
+assert.ok(buildNotificationText('receipt-uploaded', orders[1], manualPayment).includes('Receipt uploaded'));
+assert.ok(buildNotificationText('payment-verified', verifiedDeposit, manualPayment).includes('Payment Status: Deposit Paid'));
+
+const notificationContent = normalizeSiteContent({
+  manualPayment,
+});
+const newBookingNotification = buildNotificationRequest('new-booking', orders[1], notificationContent);
+assert.ok(newBookingNotification);
+assert.equal(newBookingNotification?.emails.length, 2);
+assert.deepEqual(newBookingNotification?.emails[0]?.to, ['owner@villakasehain.com']);
+
+const receiptNotification = buildNotificationRequest('receipt-uploaded', { ...orders[1], receiptUploadedAt: '2026-04-29T10:00:00.000Z' }, notificationContent);
+assert.ok(receiptNotification);
+assert.equal(receiptNotification?.emails.length, 1);
+assert.deepEqual(receiptNotification?.emails[0]?.to, ['owner@villakasehain.com']);
 
 assert.equal(ADMIN_ROUTE, '/adminvka');
 assert.equal(normalizePath('/adminvka'), '/adminvka');

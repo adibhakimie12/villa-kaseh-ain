@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useSiteContent } from '../context/SiteContentContext';
 import { eachDateInRange, formatLongDate, monthMatrix, toIsoDate } from '../lib/date';
+import { buildNotificationRequest, sendNotificationRequest } from '../lib/notifications';
 import {
   BookingFilter,
   buildBookingEmailBody,
@@ -356,7 +357,9 @@ export function AdminPage() {
   const markManualPayment = (order: BookingOrder) => {
     if (order.paymentStatus === 'Paid Full') return;
     const nextStatus = order.paymentStatus === 'Deposit Paid' || order.paymentOptionSelected === 'Full Amount' ? 'Paid Full' : 'Deposit Paid';
-    updateBooking(order.id, (current) => verifyManualPayment(current, nextStatus, today));
+    const nextOrder = verifyManualPayment(order, nextStatus, today);
+    updateBooking(order.id, () => nextOrder);
+    void sendNotificationRequest(buildNotificationRequest('payment-verified', nextOrder, content));
   };
 
   const rejectPayment = (order: BookingOrder) => {

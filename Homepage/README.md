@@ -59,3 +59,20 @@ Selepas itu:
 - visitor biasa boleh baca content public dari Supabase
 - admin yang sah boleh update content dan blocked dates
 - kalau env tak diisi, website automatik fallback ke `localStorage`
+
+## Resend Notifications
+
+Email automation boleh guna Resend free plan untuk 3 event:
+- new booking
+- receipt uploaded
+- payment verified
+
+Isi env ini dalam Vercel project `Homepage`:
+- `RESEND_API_KEY`
+- `RESEND_FROM_EMAIL`
+- `RESEND_FROM_NAME=Villa Kaseh Ain`
+
+Notes:
+- sender email mesti datang dari domain / sender yang dah verify dalam Resend
+- endpoint email live ada di `/api/notifications`
+- local Vite dev akan tetap jalan, cuma email API route tak tersedia melainkan deploy di Vercel
