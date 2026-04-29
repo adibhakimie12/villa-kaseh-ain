@@ -22,12 +22,16 @@ import { useSiteContent } from '../context/SiteContentContext';
 import { eachDateInRange, formatLongDate, monthMatrix, toIsoDate } from '../lib/date';
 import {
   BookingFilter,
+  buildBookingEmailBody,
   buildBookingMetrics,
   buildBookingTrend,
+  getPaymentActionLabel,
   filterBookings,
   getAvailabilityStateForDate,
   renderBookingTemplate,
+  rejectManualPayment,
   updateBookingStatus,
+  verifyManualPayment,
 } from '../lib/booking';
 import type {
   AutomationSettings,
@@ -164,7 +168,7 @@ function StatusChip({ value }: { value: PaymentStatus | BookingStatus | string }
       ? 'border-[#9ec8b7] bg-[#eef8f4] text-[#2d6e61]'
       : value === 'Pending' || value === 'Awaiting Payment'
         ? 'border-[#ead38f] bg-[#fff7d7] text-[#7a6016]'
-        : value === 'Cancelled' || value === 'Failed' || value === 'Refunded'
+        : value === 'Cancelled' || value === 'Failed' || value === 'Refunded' || value === 'Rejected'
           ? 'border-[#e4b1aa] bg-[#fff1ef] text-[#9b3f35]'
           : 'border-stone-300 bg-white/50 text-on-surface-variant';
 
@@ -290,6 +294,23 @@ export function AdminPage() {
     }));
   };
 
+  const updateManualPaymentField = (field: keyof typeof content.manualPayment, value: string | boolean) => {
+    updateContent((current) => ({
+      ...current,
+      manualPayment: {
+        ...current.manualPayment,
+        [field]: value,
+      },
+    }));
+  };
+
+  const handleManualQrUpload = (file: File | undefined) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => updateManualPaymentField('qrImage', String(reader.result || ''));
+    reader.readAsDataURL(file);
+  };
+
   const updateAutomation = <Group extends keyof AutomationSettings, Field extends keyof AutomationSettings[Group]>(
     group: Group,
     field: Field,
@@ -329,8 +350,15 @@ export function AdminPage() {
     }));
   };
 
-  const markPaid = (order: BookingOrder) => {
-    updateBooking(order.id, (current) => updateBookingStatus(current, 'Paid Full', 'Confirmed', today));
+  const markManualPayment = (order: BookingOrder) => {
+    if (order.paymentStatus === 'Paid Full') return;
+    const nextStatus = order.paymentStatus === 'Deposit Paid' || order.paymentOptionSelected === 'Full Amount' ? 'Paid Full' : 'Deposit Paid';
+    updateBooking(order.id, (current) => verifyManualPayment(current, nextStatus, today));
+  };
+
+  const rejectPayment = (order: BookingOrder) => {
+    if (!window.confirm(`Reject payment receipt for ${order.id}? Dates will be released.`)) return;
+    updateBooking(order.id, (current) => rejectManualPayment(current));
   };
 
   const cancelBooking = (order: BookingOrder) => {
@@ -339,13 +367,13 @@ export function AdminPage() {
   };
 
   const openWhatsApp = (order: BookingOrder) => {
-    const text = renderBookingTemplate(content.whatsappTemplates.confirmationMessage, order);
+    const text = `Booking ID: ${order.id}\n\n${renderBookingTemplate(content.whatsappTemplates.confirmationMessage, order)}`;
     window.open(`https://wa.me/${order.phone}?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
   };
 
   const openEmail = (order: BookingOrder) => {
     const subject = `Villa Kaseh Ain Booking ${order.id}`;
-    const body = renderBookingTemplate(content.whatsappTemplates.confirmationMessage, order);
+    const body = buildBookingEmailBody(order, content.manualPayment);
     window.open(`mailto:${order.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
   };
 
@@ -480,8 +508,18 @@ export function AdminPage() {
                       <button type="button" onClick={() => openEmail(order)} className="inline-flex min-h-11 items-center gap-1 rounded-full border border-stone-300 px-3 py-2 text-xs font-semibold">
                         <Mail size={13} /> Email
                       </button>
-                      <button type="button" onClick={() => markPaid(order)} className="inline-flex min-h-11 items-center rounded-full bg-primary px-3 py-2 text-xs font-semibold text-white">
-                        Mark Paid
+                      <button
+                        type="button"
+                        onClick={() => markManualPayment(order)}
+                        disabled={order.paymentStatus === 'Paid Full'}
+                        className={`inline-flex min-h-11 items-center rounded-full px-3 py-2 text-xs font-semibold ${
+                          order.paymentStatus === 'Paid Full' ? 'cursor-not-allowed bg-stone-300 text-stone-600' : 'bg-primary text-white'
+                        }`}
+                      >
+                        {getPaymentActionLabel(order)}
+                      </button>
+                      <button type="button" onClick={() => rejectPayment(order)} className="inline-flex min-h-11 items-center rounded-full border border-[#d8aaa3] px-3 py-2 text-xs font-semibold text-[#9b3f35]">
+                        Reject Payment
                       </button>
                       <button type="button" onClick={() => cancelBooking(order)} className="inline-flex min-h-11 items-center rounded-full border border-[#d8aaa3] px-3 py-2 text-xs font-semibold text-[#9b3f35]">
                         Cancel
@@ -616,18 +654,52 @@ export function AdminPage() {
           <article className="lux-surface rounded-[2rem] p-6 md:p-8">
             <div className="flex items-center gap-2">
               <CreditCard size={16} className="text-primary" />
-              <h2 className="font-headline text-2xl">Payment Gateway</h2>
+              <h2 className="font-headline text-2xl">Manual Payment</h2>
+            </div>
+            <p className="mt-3 text-sm text-on-surface-variant">
+              Guna bank account dan QR owner. Customer upload receipt, admin verify dalam Booking Orders.
+            </p>
+            <label className="mt-6 flex min-h-11 items-center justify-between gap-4 rounded-2xl border border-stone-200/80 px-4">
+              <span className="text-sm font-semibold">Enable Manual Transfer</span>
+              <input type="checkbox" checked={content.manualPayment.enabled} onChange={(event) => updateManualPaymentField('enabled', event.target.checked)} />
+            </label>
+            <div className="mt-4 space-y-4">
+              <label className="block">
+                <FieldLabel>Bank Name</FieldLabel>
+                <input value={content.manualPayment.bankName} onChange={(event) => updateManualPaymentField('bankName', event.target.value)} className="lux-inset mt-2 w-full rounded-2xl px-4 py-3 text-sm outline-none" placeholder="Maybank" />
+              </label>
+              <label className="block">
+                <FieldLabel>Account Holder Name</FieldLabel>
+                <input value={content.manualPayment.accountHolderName} onChange={(event) => updateManualPaymentField('accountHolderName', event.target.value)} className="lux-inset mt-2 w-full rounded-2xl px-4 py-3 text-sm outline-none" placeholder="Nama owner" />
+              </label>
+              <label className="block">
+                <FieldLabel>Account Number</FieldLabel>
+                <input value={content.manualPayment.accountNumber} onChange={(event) => updateManualPaymentField('accountNumber', event.target.value)} className="lux-inset mt-2 w-full rounded-2xl px-4 py-3 text-sm outline-none" placeholder="1234567890" />
+              </label>
+              <label className="block">
+                <FieldLabel>DuitNow / Bank QR Image</FieldLabel>
+                <input type="file" accept="image/*" onChange={(event) => handleManualQrUpload(event.target.files?.[0])} className="lux-inset mt-2 w-full rounded-2xl px-4 py-3 text-sm outline-none" />
+              </label>
+              {content.manualPayment.qrImage ? (
+                <img src={content.manualPayment.qrImage} alt="Owner payment QR" className="aspect-square w-full rounded-2xl border border-stone-200 object-cover" />
+              ) : null}
+              <label className="block">
+                <FieldLabel>Payment Instructions</FieldLabel>
+                <textarea value={content.manualPayment.instructions} onChange={(event) => updateManualPaymentField('instructions', event.target.value)} className="lux-inset mt-2 min-h-28 w-full rounded-2xl px-4 py-3 text-sm outline-none" />
+              </label>
             </div>
             <label className="mt-6 block">
-              <FieldLabel>Default Active Gateway</FieldLabel>
+              <FieldLabel>Future Gateway Placeholder</FieldLabel>
               <select value={content.paymentGateway.activeGateway} onChange={(event) => setPaymentGateway(event.target.value as GatewayProvider)} className="lux-inset mt-2 w-full rounded-2xl px-4 py-4 text-sm outline-none">
+                <option value="manual">Manual Bank Transfer</option>
                 <option value="billplz">Billplz</option>
                 <option value="senangPay">senangPay</option>
                 <option value="stripe">Stripe</option>
               </select>
             </label>
 
-            <div className="mt-6 space-y-5">
+            <div className="mt-4 space-y-4 rounded-[1.5rem] border border-stone-200/80 p-4 opacity-70">
+              <p className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Future Gateways</p>
               <div className="rounded-[1.5rem] border border-stone-200/80 p-4">
                 <label className="flex min-h-11 items-center justify-between gap-3">
                   <span className="font-semibold">Billplz</span>
@@ -915,6 +987,22 @@ export function AdminPage() {
                   <StatusChip value={selectedBooking.paymentStatus} />
                   <StatusChip value={selectedBooking.bookingStatus} />
                 </div>
+                <div className="mt-4 rounded-2xl border border-stone-200/80 bg-white/40 p-4">
+                  <p className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Payment Proof</p>
+                  {selectedBooking.receiptImage ? (
+                    <>
+                      <p className="mt-2 text-xs text-on-surface-variant">
+                        Uploaded {selectedBooking.receiptUploadedAt ? new Date(selectedBooking.receiptUploadedAt).toLocaleString('en-MY') : 'recently'}
+                      </p>
+                      <img src={selectedBooking.receiptImage} alt={`Receipt for ${selectedBooking.id}`} className="mt-3 max-h-72 w-full rounded-xl object-contain" />
+                    </>
+                  ) : (
+                    <p className="mt-2 text-sm text-on-surface-variant">No receipt uploaded yet.</p>
+                  )}
+                  {selectedBooking.paymentRejectedReason ? (
+                    <p className="mt-3 text-sm text-[#9b3f35]">{selectedBooking.paymentRejectedReason}</p>
+                  ) : null}
+                </div>
               </section>
               <section className="rounded-[1.5rem] border border-stone-200/80 p-5">
                 <h3 className="font-headline text-2xl">Notes</h3>
@@ -936,6 +1024,19 @@ export function AdminPage() {
               </button>
               <button type="button" onClick={() => openWhatsApp(selectedBooking)} className="inline-flex min-h-11 items-center rounded-full border border-stone-300 px-5 py-3 text-xs font-bold uppercase tracking-[0.16em]">
                 Request Balance
+              </button>
+              <button
+                type="button"
+                onClick={() => markManualPayment(selectedBooking)}
+                disabled={selectedBooking.paymentStatus === 'Paid Full'}
+                className={`inline-flex min-h-11 items-center rounded-full px-5 py-3 text-xs font-bold uppercase tracking-[0.16em] ${
+                  selectedBooking.paymentStatus === 'Paid Full' ? 'cursor-not-allowed bg-stone-300 text-stone-600' : 'bg-primary text-white'
+                }`}
+              >
+                {getPaymentActionLabel(selectedBooking)}
+              </button>
+              <button type="button" onClick={() => rejectPayment(selectedBooking)} className="inline-flex min-h-11 items-center rounded-full border border-[#d8aaa3] px-5 py-3 text-xs font-bold uppercase tracking-[0.16em] text-[#9b3f35]">
+                Reject Payment
               </button>
               <button type="button" onClick={() => updateBooking(selectedBooking.id, (order) => updateBookingStatus(order, 'Refunded', 'Cancelled'))} className="inline-flex min-h-11 items-center rounded-full border border-[#d8aaa3] px-5 py-3 text-xs font-bold uppercase tracking-[0.16em] text-[#9b3f35]">
                 Refund

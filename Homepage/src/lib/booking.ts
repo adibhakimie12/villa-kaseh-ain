@@ -1,5 +1,5 @@
 import { eachNightInStay, toIsoDate } from './date';
-import type { BookingOrder, BookingStatus, PaymentOptionSelected, PaymentRules, PaymentStatus } from './siteContent';
+import type { BookingOrder, BookingStatus, ManualPaymentSettings, PaymentOptionSelected, PaymentRules, PaymentStatus } from './siteContent';
 
 export type BookingFilter = 'Today' | 'Upcoming' | 'Paid' | 'Pending' | 'Cancelled';
 export type AvailabilityState = 'available' | 'booked' | 'pending' | 'blocked';
@@ -81,6 +81,9 @@ export function createBookingOrder(input: {
     paymentStatus: 'Pending',
     bookingStatus: 'Awaiting Payment',
     paidDate: '',
+    receiptImage: '',
+    receiptUploadedAt: '',
+    paymentRejectedReason: '',
     notes: input.notes ?? '',
     createdAt: now.toISOString(),
     updatedAt: now.toISOString(),
@@ -92,7 +95,7 @@ export function getOrderNights(order: BookingOrder) {
 }
 
 export function isActiveBooking(order: BookingOrder) {
-  return order.bookingStatus !== 'Cancelled' && order.paymentStatus !== 'Failed' && order.paymentStatus !== 'Refunded';
+  return order.bookingStatus !== 'Cancelled' && order.paymentStatus !== 'Failed' && order.paymentStatus !== 'Refunded' && order.paymentStatus !== 'Rejected';
 }
 
 export function getAvailabilityStateForDate(
@@ -184,6 +187,61 @@ export function updateBookingStatus(
     remainingBalance: paymentStatus === 'Paid Full' ? 0 : paymentStatus === 'Deposit Paid' ? Math.max(order.totalAmount - order.depositAmount, 0) : order.remainingBalance,
     updatedAt: new Date().toISOString(),
   };
+}
+
+export function getPaymentActionLabel(order: BookingOrder) {
+  if (order.paymentStatus === 'Paid Full') return 'Paid Full';
+  if (order.paymentStatus === 'Deposit Paid' && order.remainingBalance > 0) return 'Mark Full Paid';
+  return order.paymentOptionSelected === 'Full Amount' ? 'Mark Full Paid' : 'Mark Deposit Paid';
+}
+
+export function verifyManualPayment(order: BookingOrder, paymentStatus: Extract<PaymentStatus, 'Deposit Paid' | 'Paid Full'>, paidDate: string) {
+  return updateBookingStatus(order, paymentStatus, 'Confirmed', paidDate);
+}
+
+export function rejectManualPayment(order: BookingOrder, reason = 'Receipt rejected') {
+  return {
+    ...order,
+    paymentStatus: 'Rejected' as PaymentStatus,
+    bookingStatus: 'Cancelled' as BookingStatus,
+    paymentRejectedReason: reason,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+export function buildCustomerPaymentWhatsappMessage(order: BookingOrder, manualPayment: ManualPaymentSettings) {
+  const dueNow = getPaymentDueNow(order.totalAmount, order.depositAmount, order.paymentOptionSelected);
+  return [
+    'Hi Villa Kaseh Ain, saya dah buat booking dan nak confirm payment.',
+    `Booking ID: ${order.id}`,
+    `Nama: ${order.guestName}`,
+    `Tarikh: ${order.checkIn} - ${order.checkOut}`,
+    `Pax: ${order.pax}`,
+    `Payment Option: ${order.paymentOptionSelected}`,
+    `Jumlah Bayar Sekarang: RM ${dueNow.toLocaleString()}`,
+    `Bank: ${manualPayment.bankName}`,
+    `No Akaun: ${manualPayment.accountNumber}`,
+  ].join('\n');
+}
+
+export function buildBookingEmailBody(order: BookingOrder, manualPayment: ManualPaymentSettings) {
+  const dueNow = getPaymentDueNow(order.totalAmount, order.depositAmount, order.paymentOptionSelected);
+  return [
+    `Booking ID: ${order.id}`,
+    `Guest: ${order.guestName}`,
+    `Phone: ${order.phone}`,
+    `Email: ${order.email}`,
+    `Check-in: ${order.checkIn}`,
+    `Check-out: ${order.checkOut}`,
+    `Pax: ${order.pax}`,
+    `Payment Option: ${order.paymentOptionSelected}`,
+    `Amount Due Now: RM ${dueNow.toLocaleString()}`,
+    `Total Amount: RM ${order.totalAmount.toLocaleString()}`,
+    `Remaining Balance: RM ${order.remainingBalance.toLocaleString()}`,
+    `Bank: ${manualPayment.bankName}`,
+    `Account Holder: ${manualPayment.accountHolderName}`,
+    `Account Number: ${manualPayment.accountNumber}`,
+  ].join('\n');
 }
 
 export function renderBookingTemplate(template: string, order: BookingOrder) {

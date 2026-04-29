@@ -37,12 +37,12 @@ export interface BookingSettings {
   blockedDates: string[];
 }
 
-export type PaymentStatus = 'Pending' | 'Deposit Paid' | 'Paid Full' | 'Failed' | 'Refunded';
+export type PaymentStatus = 'Pending' | 'Deposit Paid' | 'Paid Full' | 'Failed' | 'Refunded' | 'Rejected';
 export type BookingStatus = 'Confirmed' | 'Awaiting Payment' | 'Checked In' | 'Completed' | 'Cancelled';
 export type BookingTypeOption = 'Deposit Only' | 'Full Payment Only' | 'Deposit + Full Payment Choice';
 export type PaymentOptionSelected = 'Deposit' | 'Full Amount';
 export type GatewayMode = 'Sandbox' | 'Live';
-export type GatewayProvider = 'billplz' | 'senangPay' | 'stripe';
+export type GatewayProvider = 'manual' | 'billplz' | 'senangPay' | 'stripe';
 
 export interface BookingOrder {
   id: string;
@@ -62,9 +62,21 @@ export interface BookingOrder {
   paymentStatus: PaymentStatus;
   bookingStatus: BookingStatus;
   paidDate: string;
+  receiptImage: string;
+  receiptUploadedAt: string;
+  paymentRejectedReason: string;
   notes: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ManualPaymentSettings {
+  enabled: boolean;
+  bankName: string;
+  accountHolderName: string;
+  accountNumber: string;
+  qrImage: string;
+  instructions: string;
 }
 
 export interface BillplzSettings {
@@ -142,6 +154,7 @@ export interface SiteContent {
   stayRules: StayRules;
   bookingSettings: BookingSettings;
   bookingOrders: BookingOrder[];
+  manualPayment: ManualPaymentSettings;
   paymentGateway: PaymentGatewaySettings;
   paymentRules: PaymentRules;
   automationSettings: AutomationSettings;
@@ -232,6 +245,9 @@ export const defaultSiteContent: SiteContent = {
       paymentStatus: 'Deposit Paid',
       bookingStatus: 'Confirmed',
       paidDate: '2026-04-28',
+      receiptImage: '',
+      receiptUploadedAt: '',
+      paymentRejectedReason: '',
       notes: 'Request early check-in if possible.',
       createdAt: '2026-04-22T09:00:00.000Z',
       updatedAt: '2026-04-28T09:00:00.000Z',
@@ -254,6 +270,9 @@ export const defaultSiteContent: SiteContent = {
       paymentStatus: 'Pending',
       bookingStatus: 'Awaiting Payment',
       paidDate: '',
+      receiptImage: '',
+      receiptUploadedAt: '',
+      paymentRejectedReason: '',
       notes: '',
       createdAt: '2026-04-26T12:00:00.000Z',
       updatedAt: '2026-04-26T12:00:00.000Z',
@@ -276,13 +295,25 @@ export const defaultSiteContent: SiteContent = {
       paymentStatus: 'Paid Full',
       bookingStatus: 'Completed',
       paidDate: '2026-04-01',
+      receiptImage: '',
+      receiptUploadedAt: '',
+      paymentRejectedReason: '',
       notes: 'Completed private event booking.',
       createdAt: '2026-03-18T08:00:00.000Z',
       updatedAt: '2026-04-07T08:00:00.000Z',
     },
   ],
+  manualPayment: {
+    enabled: true,
+    bankName: 'Maybank',
+    accountHolderName: 'Villa Kaseh Ain Owner',
+    accountNumber: '1234567890',
+    qrImage: '',
+    instructions:
+      'Sila transfer jumlah bayaran ke akaun owner atau scan QR. Selepas bayar, upload receipt dan WhatsApp admin untuk pengesahan.',
+  },
   paymentGateway: {
-    activeGateway: 'billplz',
+    activeGateway: 'manual',
     billplz: {
       enabled: true,
       apiKey: '',
@@ -395,11 +426,19 @@ export function normalizeSiteContent(input?: Partial<SiteContent> | null): SiteC
           paymentStatus: order.paymentStatus || 'Pending',
           bookingStatus: order.bookingStatus || 'Awaiting Payment',
           paidDate: order.paidDate || '',
+          receiptImage: order.receiptImage || '',
+          receiptUploadedAt: order.receiptUploadedAt || '',
+          paymentRejectedReason: order.paymentRejectedReason || '',
           notes: order.notes || '',
           createdAt: order.createdAt || new Date().toISOString(),
           updatedAt: order.updatedAt || new Date().toISOString(),
         }))
       : defaultSiteContent.bookingOrders,
+    manualPayment: {
+      ...defaultSiteContent.manualPayment,
+      ...input?.manualPayment,
+      enabled: Boolean(input?.manualPayment?.enabled ?? defaultSiteContent.manualPayment.enabled),
+    },
     paymentGateway: {
       activeGateway: input?.paymentGateway?.activeGateway ?? defaultSiteContent.paymentGateway.activeGateway,
       billplz: {

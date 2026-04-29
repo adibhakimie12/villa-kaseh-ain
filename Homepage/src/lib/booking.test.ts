@@ -1,12 +1,15 @@
 import assert from 'node:assert/strict';
 import {
+  buildCustomerPaymentWhatsappMessage,
   buildBookingMetrics,
+  getPaymentActionLabel,
   getAllowedPaymentOptions,
   getAvailabilityStateForDate,
   getBookingBalance,
   renderBookingTemplate,
+  verifyManualPayment,
 } from './booking';
-import { defaultSiteContent, normalizeSiteContent, type BookingOrder, type PaymentRules } from './siteContent';
+import { defaultSiteContent, normalizeSiteContent, type BookingOrder, type ManualPaymentSettings, type PaymentRules } from './siteContent';
 
 const orders: BookingOrder[] = [
   {
@@ -27,6 +30,9 @@ const orders: BookingOrder[] = [
     paymentStatus: 'Deposit Paid',
     bookingStatus: 'Confirmed',
     paidDate: '2026-04-28',
+    receiptImage: '',
+    receiptUploadedAt: '',
+    paymentRejectedReason: '',
     notes: 'Family stay',
     createdAt: '2026-04-20T10:00:00.000Z',
     updatedAt: '2026-04-28T10:00:00.000Z',
@@ -49,6 +55,9 @@ const orders: BookingOrder[] = [
     paymentStatus: 'Pending',
     bookingStatus: 'Awaiting Payment',
     paidDate: '',
+    receiptImage: '',
+    receiptUploadedAt: '',
+    paymentRejectedReason: '',
     notes: '',
     createdAt: '2026-04-22T10:00:00.000Z',
     updatedAt: '2026-04-22T10:00:00.000Z',
@@ -71,6 +80,9 @@ const orders: BookingOrder[] = [
     paymentStatus: 'Paid Full',
     bookingStatus: 'Completed',
     paidDate: '2026-04-01',
+    receiptImage: '',
+    receiptUploadedAt: '',
+    paymentRejectedReason: '',
     notes: '',
     createdAt: '2026-03-20T10:00:00.000Z',
     updatedAt: '2026-04-07T10:00:00.000Z',
@@ -97,6 +109,7 @@ assert.equal(getAvailabilityStateForDate('2026-05-10', orders, ['2026-05-20']).s
 assert.equal(getAvailabilityStateForDate('2026-05-15', orders, ['2026-05-20']).state, 'pending');
 assert.equal(getAvailabilityStateForDate('2026-05-20', orders, ['2026-05-20']).state, 'blocked');
 assert.equal(getAvailabilityStateForDate('2026-05-21', orders, ['2026-05-20']).state, 'available');
+assert.equal(getAvailabilityStateForDate('2026-05-15', [{ ...orders[1], bookingStatus: 'Cancelled' }], []).state, 'available');
 
 assert.deepEqual(getBookingBalance(1800, rules), {
   depositAmount: 500,
@@ -114,8 +127,14 @@ assert.equal(
 
 assert.equal(defaultSiteContent.automationSettings.adminAlerts.ownerEmail, 'owner@villakasehain.com');
 assert.equal(defaultSiteContent.automationSettings.adminAlerts.ownerWhatsappNumber, '60166341564');
+assert.equal(defaultSiteContent.manualPayment.bankName, 'Maybank');
+assert.equal(defaultSiteContent.paymentGateway.activeGateway, 'manual');
 assert.equal(
   normalizeSiteContent({
+    manualPayment: {
+      ...defaultSiteContent.manualPayment,
+      accountNumber: '1234567890',
+    },
     automationSettings: {
       ...defaultSiteContent.automationSettings,
       adminAlerts: {
@@ -126,5 +145,36 @@ assert.equal(
   }).automationSettings.adminAlerts.ownerEmail,
   'boss@example.com',
 );
+assert.equal(normalizeSiteContent({}).manualPayment.accountNumber, defaultSiteContent.manualPayment.accountNumber);
+
+assert.equal(getPaymentActionLabel(orders[1]), 'Mark Deposit Paid');
+assert.equal(getPaymentActionLabel({ ...orders[1], paymentOptionSelected: 'Full Amount' }), 'Mark Full Paid');
+assert.equal(getPaymentActionLabel(orders[2]), 'Paid Full');
+assert.equal(getPaymentActionLabel(orders[0]), 'Mark Full Paid');
+
+const verifiedDeposit = verifyManualPayment(orders[1], 'Deposit Paid', '2026-04-29');
+assert.equal(verifiedDeposit.amountPaid, 500);
+assert.equal(verifiedDeposit.remainingBalance, 1300);
+assert.equal(verifiedDeposit.paymentStatus, 'Deposit Paid');
+assert.equal(verifiedDeposit.bookingStatus, 'Confirmed');
+
+const verifiedFull = verifyManualPayment(orders[1], 'Paid Full', '2026-04-29');
+assert.equal(verifiedFull.amountPaid, 1800);
+assert.equal(verifiedFull.remainingBalance, 0);
+assert.equal(verifiedFull.paymentStatus, 'Paid Full');
+
+const manualPayment: ManualPaymentSettings = {
+  enabled: true,
+  bankName: 'Maybank',
+  accountHolderName: 'Villa Owner',
+  accountNumber: '1234567890',
+  qrImage: 'data:image/png;base64,abc',
+  instructions: 'Transfer and send receipt.',
+};
+
+const paymentMessage = buildCustomerPaymentWhatsappMessage(orders[1], manualPayment);
+assert.ok(paymentMessage.includes('VKA-1002'));
+assert.ok(paymentMessage.includes('RM 500'));
+assert.ok(paymentMessage.includes('Maybank'));
 
 console.log('booking helper tests passed');

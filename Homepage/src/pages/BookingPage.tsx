@@ -3,7 +3,7 @@ import { CalendarDays, Users, CheckCircle2, CreditCard, MessageCircle } from 'lu
 import { useSiteContent } from '../context/SiteContentContext';
 import { eachNightInStay, formatLongDate, monthMatrix, toIsoDate } from '../lib/date';
 import {
-  buildPaymentLink,
+  buildCustomerPaymentWhatsappMessage,
   createBookingOrder,
   dayDiff,
   getAllowedPaymentOptions,
@@ -27,7 +27,6 @@ export function BookingPage() {
   const [paymentOptionSelected, setPaymentOptionSelected] = useState<PaymentOptionSelected>('Deposit');
 
   const blockedDates = content.bookingSettings.blockedDates;
-  const blockedDateSet = useMemo(() => new Set(blockedDates), [blockedDates]);
 
   const nights = dayDiff(checkIn, checkOut);
   const maxIncludedGuests = 25;
@@ -35,8 +34,11 @@ export function BookingPage() {
   const extraGuests = Math.max(guestCount - maxIncludedGuests, 0);
 
   const overlappingBlockedDates = useMemo(() => {
-    return eachNightInStay(checkIn, checkOut).filter((date) => blockedDateSet.has(date));
-  }, [blockedDateSet, checkIn, checkOut]);
+    return eachNightInStay(checkIn, checkOut).filter((date) => {
+      const availability = getAvailabilityStateForDate(date, content.bookingOrders, blockedDates);
+      return availability.state !== 'available';
+    });
+  }, [blockedDates, checkIn, checkOut, content.bookingOrders]);
 
   const isSelectionAvailable = Boolean(checkIn && checkOut && overlappingBlockedDates.length === 0);
   const canSubmitBooking = isSelectionAvailable && nights > 0 && guestName.trim() && phone.trim() && email.trim();
@@ -101,6 +103,31 @@ export function BookingPage() {
       bookingOrders: [order, ...current.bookingOrders],
     }));
     setSubmittedOrder(order);
+  };
+
+  const updateSubmittedOrder = (updater: (order: BookingOrder) => BookingOrder) => {
+    if (!submittedOrder) return;
+    const nextOrder = updater(submittedOrder);
+    setSubmittedOrder(nextOrder);
+    updateContent((current) => ({
+      ...current,
+      bookingOrders: current.bookingOrders.map((order) => (order.id === nextOrder.id ? nextOrder : order)),
+    }));
+  };
+
+  const handleReceiptUpload = (file: File | undefined) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      updateSubmittedOrder((order) => ({
+        ...order,
+        receiptImage: String(reader.result || ''),
+        receiptUploadedAt: new Date().toISOString(),
+        paymentRejectedReason: '',
+        updatedAt: new Date().toISOString(),
+      }));
+    };
+    reader.readAsDataURL(file);
   };
 
   const today = toIsoDate(new Date());
@@ -368,12 +395,21 @@ export function BookingPage() {
             <div className="mt-6 rounded-[1.75rem] border border-[#d9c9b4] bg-[#fff8ef] p-5">
               <div className="flex items-center gap-2 text-primary">
                 <CreditCard size={16} />
-                <p className="text-xs font-bold uppercase tracking-[0.2em]">Payment Step Ready</p>
+                <p className="text-xs font-bold uppercase tracking-[0.2em]">Manual Payment Ready</p>
               </div>
               <h3 className="mt-3 font-headline text-2xl">{submittedOrder.id}</h3>
               <p className="mt-2 text-sm text-on-surface-variant">
-                Booking direkod sebagai Awaiting Payment. Admin boleh confirm selepas bayaran diterima.
+                Transfer ke akaun owner atau scan QR, kemudian upload receipt untuk admin verify.
               </p>
+              <div className="mt-4 rounded-2xl border border-stone-200/80 bg-white/45 p-4 text-sm">
+                <p className="font-semibold">{content.manualPayment.bankName}</p>
+                <p className="mt-1 text-on-surface-variant">{content.manualPayment.accountHolderName}</p>
+                <p className="mt-1 text-lg font-bold text-primary">{content.manualPayment.accountNumber}</p>
+                <p className="mt-3 text-xs leading-relaxed text-on-surface-variant">{content.manualPayment.instructions}</p>
+                {content.manualPayment.qrImage ? (
+                  <img src={content.manualPayment.qrImage} alt="Owner payment QR" className="mt-4 aspect-square w-full rounded-2xl object-cover" />
+                ) : null}
+              </div>
               <div className="mt-4 space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span>Payment Option</span>
@@ -388,13 +424,30 @@ export function BookingPage() {
                   <span>{`RM ${submittedOrder.remainingBalance.toLocaleString()}`}</span>
                 </div>
               </div>
+              <label className="mt-4 block">
+                <span className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Upload Receipt</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(event) => handleReceiptUpload(event.target.files?.[0])}
+                  className="lux-inset mt-2 w-full rounded-2xl px-4 py-3 text-sm outline-none"
+                />
+              </label>
+              {submittedOrder.receiptImage ? (
+                <div className="mt-4 rounded-2xl border border-[#9ec8b7] bg-[#eef8f4] p-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Receipt uploaded</p>
+                  <img src={submittedOrder.receiptImage} alt="Uploaded payment receipt" className="mt-3 max-h-56 w-full rounded-xl object-contain" />
+                </div>
+              ) : null}
               <a
-                href={buildPaymentLink(submittedOrder, content.paymentGateway.activeGateway)}
+                href={`https://wa.me/${content.automationSettings.adminAlerts.ownerWhatsappNumber || content.siteConfig.whatsappNumber}?text=${encodeURIComponent(
+                  buildCustomerPaymentWhatsappMessage(submittedOrder, content.manualPayment),
+                )}`}
                 target="_blank"
                 rel="noreferrer"
                 className="mt-4 inline-flex w-full items-center justify-center rounded-full bg-[#22312d] px-6 py-4 text-xs font-bold uppercase tracking-[0.2em] text-white"
               >
-                Generate Payment Link
+                WhatsApp Admin
               </a>
             </div>
           ) : null}
