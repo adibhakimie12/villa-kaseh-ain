@@ -37,7 +37,7 @@ export function FirstVisitPopup({ onClose, onNavigate }: FirstVisitPopupProps) {
 
             <div className="mt-4 overflow-hidden rounded-2xl border border-[#d9cdb6]">
               <img
-                src="https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=1400&q=80"
+                src="/media/images/popup-welcome.png"
                 alt="Villa Kaseh Ain welcome visual"
                 className="h-44 w-full object-cover md:h-[360px]"
               />

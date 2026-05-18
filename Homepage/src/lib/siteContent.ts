@@ -195,9 +195,8 @@ export const defaultSiteContent: SiteContent = {
     mapsUrl: 'https://maps.app.goo.gl/nLUFF1MZYwaEBrM38',
   },
   heroMedia: {
-    video: 'https://www.w3schools.com/html/mov_bbb.mp4',
-    poster:
-      'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=80',
+    video: '/media/videos/vkabgh-hero.mp4',
+    poster: '/media/images/gallery/gallery-01.jpg',
   },
   villaFeatures: [
     { title: 'Private Pool', description: 'Kolam persendirian untuk keluarga dan group.' },
@@ -208,10 +207,10 @@ export const defaultSiteContent: SiteContent = {
     { title: 'Parking', description: 'Tempat parkir yang selesa dan selamat.' },
   ],
   galleryImages: [
-    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=80',
-    'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1600&q=80',
-    'https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?auto=format&fit=crop&w=1600&q=80',
-    'https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?auto=format&fit=crop&w=1600&q=80',
+    '/media/images/gallery/gallery-hero-patio.jpg',
+    '/media/images/gallery/gallery-aerial-sunset.jpg',
+    '/media/images/gallery/gallery-pool-day.jpg',
+    '/media/images/gallery/gallery-beach-walk.jpg',
   ],
   roomTypes: [
     {
@@ -442,6 +441,40 @@ function normalizeNotes(input: unknown, fallback: string[]) {
     : fallback;
 }
 
+function normalizeHeroMedia(input?: Partial<HeroMedia> | null): HeroMedia {
+  const legacyVideo = 'https://www.w3schools.com/html/mov_bbb.mp4';
+  const legacyPoster =
+    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=80';
+
+  return {
+    video:
+      !input?.video || input.video === legacyVideo
+        ? defaultSiteContent.heroMedia.video
+        : input.video,
+    poster:
+      !input?.poster || input.poster === legacyPoster
+        ? defaultSiteContent.heroMedia.poster
+        : input.poster,
+  };
+}
+
+function normalizeGalleryImages(input?: string[] | null) {
+  const legacyGalleryImages = [
+    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=80',
+    'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1600&q=80',
+    'https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?auto=format&fit=crop&w=1600&q=80',
+    'https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?auto=format&fit=crop&w=1600&q=80',
+  ];
+
+  const isLegacyGallery =
+    input?.length === legacyGalleryImages.length &&
+    input.every((image, index) => image === legacyGalleryImages[index]);
+
+  return input?.length === defaultSiteContent.galleryImages.length && !isLegacyGallery
+    ? input
+    : defaultSiteContent.galleryImages;
+}
+
 export function normalizeSiteContent(input?: Partial<SiteContent> | null): SiteContent {
   const hasLegacyRates = Boolean(input?.roomTypes?.length && input.roomTypes.length !== defaultSiteContent.roomTypes.length);
   return {
@@ -449,18 +482,12 @@ export function normalizeSiteContent(input?: Partial<SiteContent> | null): SiteC
       ...defaultSiteContent.siteConfig,
       ...input?.siteConfig,
     },
-    heroMedia: {
-      ...defaultSiteContent.heroMedia,
-      ...input?.heroMedia,
-    },
+    heroMedia: normalizeHeroMedia(input?.heroMedia),
     villaFeatures:
       input?.villaFeatures?.length === defaultSiteContent.villaFeatures.length
         ? input.villaFeatures
         : defaultSiteContent.villaFeatures,
-    galleryImages:
-      input?.galleryImages?.length === defaultSiteContent.galleryImages.length
-        ? input.galleryImages
-        : defaultSiteContent.galleryImages,
+    galleryImages: normalizeGalleryImages(input?.galleryImages),
     roomTypes:
       input?.roomTypes?.length === defaultSiteContent.roomTypes.length
         ? input.roomTypes.map((room, index) => ({

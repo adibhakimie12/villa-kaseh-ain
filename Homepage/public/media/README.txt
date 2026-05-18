@@ -5,7 +5,7 @@ Struktur yang digunakan sekarang:
 - images/gallery/gallery-02.jpg
 - images/gallery/gallery-03.jpg
 - images/gallery/gallery-04.jpg
-- videos/hero.mp4
+- videos/vkabgh-hero.mp4
 
 Cara guna:
 1. Replace fail dengan nama yang sama.
