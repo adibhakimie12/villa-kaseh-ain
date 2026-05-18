@@ -20,6 +20,12 @@ const fullGalleryImages = [
   '/media/images/gallery/gallery-lounge.jpg',
 ];
 
+const introPreviewImages = [
+  '/media/images/gallery/gallery-room-suite.jpg',
+  '/media/images/gallery/gallery-games-room.jpg',
+  '/media/images/gallery/gallery-bbq-pool.jpg',
+];
+
 export function HomePage({ onNavigate }: HomePageProps) {
   const { content, whatsappUrl } = useSiteContent();
   const publicRoomRates = getPublicRoomRates(content.roomTypes);
@@ -163,8 +169,8 @@ export function HomePage({ onNavigate }: HomePageProps) {
           <div className="grid grid-cols-[1.02fr_0.98fr] gap-4 md:gap-5">
             <div className="overflow-hidden rounded-[2rem] shadow-[0_20px_50px_rgba(45,27,13,0.12)]">
               <img
-                src={content.galleryImages[0]}
-                alt="Villa Kaseh Ain exterior view"
+                src={introPreviewImages[0]}
+                alt="Villa Kaseh Ain suite room"
                 className="h-full min-h-[320px] w-full object-cover"
                 loading="lazy"
               />
@@ -172,16 +178,16 @@ export function HomePage({ onNavigate }: HomePageProps) {
             <div className="flex flex-col gap-4 md:gap-5">
               <div className="overflow-hidden rounded-[2rem] shadow-[0_20px_50px_rgba(45,27,13,0.12)]">
                 <img
-                src={content.galleryImages[1]}
-                alt="Villa Kaseh Ain interior view"
+                src={introPreviewImages[1]}
+                alt="Villa Kaseh Ain games room"
                 className="h-44 w-full object-cover md:h-52"
                 loading="lazy"
               />
               </div>
               <div className="overflow-hidden rounded-[2rem] shadow-[0_20px_50px_rgba(45,27,13,0.12)]">
                 <img
-                  src={content.galleryImages[2]}
-                  alt="Villa Kaseh Ain pool view"
+                  src={introPreviewImages[2]}
+                  alt="Villa Kaseh Ain barbecue area by the pool"
                   className="h-44 w-full object-cover md:h-60"
                   loading="lazy"
                 />
