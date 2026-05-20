@@ -1,5 +1,7 @@
 import { MessageCircle } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 import { useSiteContent } from '../context/SiteContentContext';
+import { translateSiteContent } from '../lib/i18n';
 import { ADMIN_ROUTE } from '../lib/routes';
 
 interface MobileBottomBarProps {
@@ -8,7 +10,12 @@ interface MobileBottomBarProps {
 }
 
 export function MobileBottomBar({ onNavigate, pathname }: MobileBottomBarProps) {
-  const { whatsappUrl } = useSiteContent();
+  const { content } = useSiteContent();
+  const { language, t } = useLanguage();
+  const displayContent = translateSiteContent(content, language);
+  const whatsappUrl = `https://wa.me/${displayContent.siteConfig.whatsappNumber}?text=${encodeURIComponent(
+    displayContent.siteConfig.whatsappMessage,
+  )}`;
 
   if (pathname === ADMIN_ROUTE) {
     return null;
@@ -22,7 +29,7 @@ export function MobileBottomBar({ onNavigate, pathname }: MobileBottomBarProps) 
           onClick={() => onNavigate('/booking')}
           className="rounded-full bg-primary px-4 py-3 text-[10px] font-bold uppercase tracking-[0.18em] text-white"
         >
-          Book Now
+          {t('common.bookNow')}
         </button>
         <a
           href={whatsappUrl}
@@ -31,7 +38,7 @@ export function MobileBottomBar({ onNavigate, pathname }: MobileBottomBarProps) 
           className="inline-flex items-center justify-center gap-2 rounded-full border border-primary/25 px-4 py-3 text-[10px] font-bold uppercase tracking-[0.18em] text-primary"
         >
           <MessageCircle size={14} />
-          WhatsApp
+          {t('common.whatsapp')}
         </a>
       </div>
     </div>

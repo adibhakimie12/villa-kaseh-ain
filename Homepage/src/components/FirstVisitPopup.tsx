@@ -1,5 +1,7 @@
 import { X } from 'lucide-react';
-import { whatsappUrl } from '../data/site';
+import { useLanguage } from '../context/LanguageContext';
+import { useSiteContent } from '../context/SiteContentContext';
+import { translateSiteContent } from '../lib/i18n';
 
 interface FirstVisitPopupProps {
   onClose: () => void;
@@ -7,6 +9,13 @@ interface FirstVisitPopupProps {
 }
 
 export function FirstVisitPopup({ onClose, onNavigate }: FirstVisitPopupProps) {
+  const { content } = useSiteContent();
+  const { language, t } = useLanguage();
+  const displayContent = translateSiteContent(content, language);
+  const whatsappUrl = `https://wa.me/${displayContent.siteConfig.whatsappNumber}?text=${encodeURIComponent(
+    displayContent.siteConfig.whatsappMessage,
+  )}`;
+
   return (
     <div
       className="fixed inset-0 z-[70] flex items-center justify-center bg-black/65 p-3 md:p-8"
@@ -19,7 +28,7 @@ export function FirstVisitPopup({ onClose, onNavigate }: FirstVisitPopupProps) {
         <button
           type="button"
           onClick={onClose}
-          aria-label="Close popup"
+          aria-label={t('popup.close')}
           className="sticky right-3 top-3 z-20 ml-auto mr-3 mt-3 flex rounded-full border border-[#d4c0a1] bg-[#fffaf2] p-2.5 text-[#5a4b3a] shadow-md transition hover:bg-white md:absolute md:right-4 md:top-4 md:m-0"
         >
           <X size={18} />
@@ -29,10 +38,10 @@ export function FirstVisitPopup({ onClose, onNavigate }: FirstVisitPopupProps) {
           <div className="border-b border-[#d9cdb6] px-5 pb-4 pt-2 md:p-10 lg:border-b-0 lg:border-r">
             <p className="text-center text-[10px] uppercase tracking-[0.35em] text-[#9a7a46] md:text-xs">Villa Kaseh Ain</p>
             <h2 className="mt-2 text-center font-headline text-[1.1rem] leading-snug text-[#2d2a25] md:mt-4 md:text-4xl">
-              Welcome To Our Private Coastal Retreat
+              {t('popup.title')}
             </h2>
             <p className="mx-auto mt-1 max-w-md text-center text-xs text-[#59544b] md:mt-2 md:text-base">
-              A warm beginning for meaningful staycations with your loved ones.
+              {t('popup.subtitle')}
             </p>
 
             <div className="mt-4 overflow-hidden rounded-2xl border border-[#d9cdb6]">
@@ -45,18 +54,18 @@ export function FirstVisitPopup({ onClose, onNavigate }: FirstVisitPopupProps) {
           </div>
 
           <div className="p-5 pt-4 md:p-10">
-            <p className="font-headline text-[1.05rem] text-[#2d2a25] md:text-2xl">Dear Beloved Customer,</p>
+            <p className="font-headline text-[1.05rem] text-[#2d2a25] md:text-2xl">{t('popup.dear')}</p>
             <p className="mt-3 text-sm leading-relaxed text-[#3f392f] md:mt-4 md:text-base">
-              Welcome to Villa Kaseh Ain, your premium escape for peaceful holidays, family reunions, and private moments by the sea.
+              {t('popup.copy1')}
             </p>
             <p className="mt-3 hidden text-sm leading-relaxed text-[#3f392f] md:mt-4 md:block md:text-base">
-              Every corner of this villa is curated to feel luxurious yet warm, so your stay feels both exclusive and deeply comfortable.
+              {t('popup.copy2')}
             </p>
             <p className="mt-3 hidden text-sm leading-relaxed text-[#3f392f] md:mt-4 md:block md:text-base">
-              For a smooth booking experience, we recommend checking your preferred dates early and contacting us directly for custom requests.
+              {t('popup.copy3')}
             </p>
             <p className="mt-3 text-sm font-semibold text-[#2d2a25] md:mt-5 md:text-base">
-              Thank you for your trust. We look forward to hosting you soon.
+              {t('popup.thanks')}
             </p>
 
             <div className="mt-5 grid grid-cols-1 gap-3 md:mt-7 md:grid-cols-1 lg:grid-cols-2">
@@ -68,7 +77,7 @@ export function FirstVisitPopup({ onClose, onNavigate }: FirstVisitPopupProps) {
                 }}
                 className="rounded-full bg-primary px-5 py-3 text-xs font-bold uppercase tracking-[0.2em] text-white"
               >
-                Check Dates
+                {t('popup.checkDates')}
               </button>
               <a
                 href={whatsappUrl}
@@ -77,7 +86,7 @@ export function FirstVisitPopup({ onClose, onNavigate }: FirstVisitPopupProps) {
                 onClick={onClose}
                 className="inline-flex items-center justify-center rounded-full border border-primary/25 px-5 py-3 text-xs font-bold uppercase tracking-[0.2em] text-primary"
               >
-                WhatsApp Us
+                {t('popup.whatsappUs')}
               </a>
             </div>
 
@@ -86,7 +95,7 @@ export function FirstVisitPopup({ onClose, onNavigate }: FirstVisitPopupProps) {
               onClick={onClose}
               className="mt-4 w-full text-center text-xs font-medium text-[#6a6256] underline underline-offset-4 md:mt-5 md:w-auto md:text-sm"
             >
-              Continue browsing
+              {t('popup.continue')}
             </button>
           </div>
         </div>

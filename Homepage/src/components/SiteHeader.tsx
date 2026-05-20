@@ -1,6 +1,8 @@
 import { Menu, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { useSiteContent } from '../context/SiteContentContext';
+import { translateSiteContent } from '../lib/i18n';
 
 interface SiteHeaderProps {
   pathname: string;
@@ -8,13 +10,23 @@ interface SiteHeaderProps {
 }
 
 const navItems = [
-  { label: 'Home', path: '/' },
-  { label: 'Booking', path: '/booking' },
-  { label: 'Contact', path: '/contact' },
-];
+  { labelKey: 'nav.home', path: '/' },
+  { labelKey: 'nav.booking', path: '/booking' },
+  { labelKey: 'nav.contact', path: '/contact' },
+] as const;
+
+const languageOptions = [
+  { language: 'en', labelKey: 'language.shortEnglish' },
+  { language: 'ms', labelKey: 'language.shortMalay' },
+] as const;
 
 export function SiteHeader({ pathname, onNavigate }: SiteHeaderProps) {
-  const { content, whatsappUrl } = useSiteContent();
+  const { content } = useSiteContent();
+  const { language, setLanguage, t } = useLanguage();
+  const displayContent = translateSiteContent(content, language);
+  const whatsappUrl = `https://wa.me/${displayContent.siteConfig.whatsappNumber}?text=${encodeURIComponent(
+    displayContent.siteConfig.whatsappMessage,
+  )}`;
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const isHome = pathname === '/';
@@ -60,7 +72,7 @@ export function SiteHeader({ pathname, onNavigate }: SiteHeaderProps) {
         >
           <img
             src="/villa-kaseh-ain-logo-transparent.png"
-            alt={`${content.siteConfig.name} logo`}
+            alt={`${displayContent.siteConfig.name} logo`}
             className={`h-auto w-full object-contain transition-all duration-500 ${
               showFullHeader
                 ? 'opacity-100'
@@ -85,7 +97,7 @@ export function SiteHeader({ pathname, onNavigate }: SiteHeaderProps) {
                   : `${navTextClassName} ${showFullHeader ? 'hover:text-[#22312d]' : ''}`
               }`}
             >
-              {item.label}
+              {t(item.labelKey)}
             </button>
           ))}
           <a
@@ -94,15 +106,39 @@ export function SiteHeader({ pathname, onNavigate }: SiteHeaderProps) {
             rel="noreferrer"
             className={`rounded-full px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] transition ${whatsappClassName}`}
           >
-            WhatsApp
+            {t('common.whatsapp')}
           </a>
+          <div
+            className={`flex rounded-full border p-1 ${
+              showFullHeader ? 'border-[#4c9085]/25 bg-white/50' : 'border-white/20 bg-white/10'
+            }`}
+            aria-label={t('language.label')}
+          >
+            {languageOptions.map((option) => (
+              <button
+                key={option.language}
+                type="button"
+                onClick={() => setLanguage(option.language)}
+                className={`rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] transition ${
+                  language === option.language
+                    ? 'bg-[#4c9085] text-[#0f1d1a]'
+                    : showFullHeader
+                      ? 'text-[#456962]/80 hover:text-[#22312d]'
+                      : 'text-white/80 hover:text-white'
+                }`}
+                aria-pressed={language === option.language}
+              >
+                {t(option.labelKey)}
+              </button>
+            ))}
+          </div>
         </div>
 
         <button
           type="button"
           onClick={() => setIsOpen((prev) => !prev)}
           className={`rounded-full border p-2 transition-all duration-500 md:hidden ${mobileButtonClassName}`}
-          aria-label="Toggle menu"
+          aria-label={t('nav.toggleMenu')}
         >
           {isOpen ? <X size={18} /> : <Menu size={18} />}
         </button>
@@ -128,9 +164,28 @@ export function SiteHeader({ pathname, onNavigate }: SiteHeaderProps) {
                     : 'border-white/10 text-white'
                 }`}
               >
-                {item.label}
+                {t(item.labelKey)}
               </button>
             ))}
+            <div className="grid grid-cols-2 gap-2">
+              {languageOptions.map((option) => (
+                <button
+                  key={option.language}
+                  type="button"
+                  onClick={() => setLanguage(option.language)}
+                  className={`rounded-xl border px-3 py-3 text-xs font-semibold uppercase tracking-[0.18em] ${
+                    language === option.language
+                      ? 'border-[#4c9085] bg-[#4c9085] text-[#0f1d1a]'
+                      : showFullHeader
+                        ? 'border-[#4c9085]/25 text-[#35534d]'
+                        : 'border-white/10 text-white'
+                  }`}
+                  aria-pressed={language === option.language}
+                >
+                  {t(option.labelKey)}
+                </button>
+              ))}
+            </div>
             <a
               href={whatsappUrl}
               target="_blank"
@@ -139,7 +194,7 @@ export function SiteHeader({ pathname, onNavigate }: SiteHeaderProps) {
                 showFullHeader ? 'bg-[#4c9085] text-[#0f1d1a]' : 'bg-white text-primary'
               }`}
             >
-              WhatsApp
+              {t('common.whatsapp')}
             </a>
           </div>
         </div>

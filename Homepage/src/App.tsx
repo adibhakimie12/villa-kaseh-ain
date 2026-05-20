@@ -3,6 +3,7 @@ import { FirstVisitPopup } from './components/FirstVisitPopup';
 import { MobileBottomBar } from './components/MobileBottomBar';
 import { SiteFooter } from './components/SiteFooter';
 import { SiteHeader } from './components/SiteHeader';
+import { LanguageProvider } from './context/LanguageContext';
 import { SiteContentProvider } from './context/SiteContentContext';
 import { ADMIN_ROUTE, normalizePath } from './lib/routes';
 import { AdminPage } from './pages/AdminPage';
@@ -37,16 +38,18 @@ export default function App() {
 
   return (
     <SiteContentProvider>
-      <div className="min-h-screen bg-surface pb-0 md:pb-0">
-        <SiteHeader pathname={pathname} onNavigate={navigate} />
-        {pathname === '/' && <HomePage onNavigate={navigate} />}
-        {pathname === '/booking' && <BookingPage />}
-        {pathname === '/contact' && <ContactPage />}
-        {pathname === ADMIN_ROUTE && <AdminPage />}
-        {showFirstVisitPopup && <FirstVisitPopup onClose={closeFirstVisitPopup} onNavigate={navigate} />}
-        <SiteFooter />
-        <MobileBottomBar pathname={pathname} onNavigate={navigate} />
-      </div>
+      <LanguageProvider>
+        <div className="min-h-screen bg-surface pb-0 md:pb-0">
+          <SiteHeader pathname={pathname} onNavigate={navigate} />
+          {pathname === '/' && <HomePage onNavigate={navigate} />}
+          {pathname === '/booking' && <BookingPage />}
+          {pathname === '/contact' && <ContactPage />}
+          {pathname === ADMIN_ROUTE && <AdminPage />}
+          {showFirstVisitPopup && <FirstVisitPopup onClose={closeFirstVisitPopup} onNavigate={navigate} />}
+          <SiteFooter />
+          <MobileBottomBar pathname={pathname} onNavigate={navigate} />
+        </div>
+      </LanguageProvider>
     </SiteContentProvider>
   );
 }

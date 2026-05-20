@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { CalendarDays, Users, CheckCircle2, CreditCard, MessageCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 import { useSiteContent } from '../context/SiteContentContext';
-import { eachNightInStay, formatLongDate, monthMatrix, toIsoDate } from '../lib/date';
+import { eachNightInStay, monthMatrix, toIsoDate } from '../lib/date';
 import { buildNotificationRequest, sendNotificationRequest } from '../lib/notifications';
 import {
   buildCustomerPaymentWhatsappMessage,
@@ -12,7 +13,6 @@ import {
   getBookingBalance,
   getAutomaticRateForStay,
   getPaymentDueNow,
-  getRoomRatePriceCaption,
   getRoomRateSubtotal,
   getAvailabilityStateForDate,
   getPublicRoomRates,
@@ -20,10 +20,18 @@ import {
   isRateSelectionValid,
   selectBookingCalendarDate,
 } from '../lib/booking';
+import {
+  formatLongDateByLanguage,
+  getLanguageLocale,
+  getRoomRatePriceCaptionByLanguage,
+  translateSiteContent,
+} from '../lib/i18n';
 import type { BookingOrder, PaymentOptionSelected } from '../lib/siteContent';
 
 export function BookingPage() {
   const { content, updateContent } = useSiteContent();
+  const { language, t } = useLanguage();
+  const displayContent = translateSiteContent(content, language);
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
   const [guestCount, setGuestCount] = useState(20);
@@ -44,10 +52,10 @@ export function BookingPage() {
 
   const nights = dayDiff(checkIn, checkOut);
   const guestOptions = useMemo(() => getPublicGuestOptions(), []);
-  const publicRoomRates = useMemo(() => getPublicRoomRates(content.roomTypes), [content.roomTypes]);
+  const publicRoomRates = useMemo(() => getPublicRoomRates(displayContent.roomTypes), [displayContent.roomTypes]);
   const selectedRate = useMemo(
-    () => getAutomaticRateForStay(content.roomTypes, checkIn, checkOut, content.bookingSettings.publicHolidayDates),
-    [checkIn, checkOut, content.bookingSettings.publicHolidayDates, content.roomTypes],
+    () => getAutomaticRateForStay(displayContent.roomTypes, checkIn, checkOut, content.bookingSettings.publicHolidayDates),
+    [checkIn, checkOut, content.bookingSettings.publicHolidayDates, displayContent.roomTypes],
   );
   const maxIncludedGuests = 25;
   const extraGuestRatePerPersonPerNight = 50;
@@ -89,18 +97,18 @@ export function BookingPage() {
 
   const whatsappUrl = useMemo(() => {
     const message = [
-      'Hi Villa Kaseh Ain, saya nak buat booking.',
+      t('booking.whatsappMessageIntro'),
       checkIn ? `Check-in: ${checkIn}` : null,
       checkOut ? `Check-out: ${checkOut}` : null,
-      `Guests: ${guestCount}`,
+      `${t('booking.guests')}: ${guestCount}`,
       `Rate: ${selectedRate.label}`,
-      nights > 0 ? `Estimated Total: RM ${summary.total.toLocaleString()}` : null,
+      nights > 0 ? `${t('booking.totalEstimate')}: RM ${summary.total.toLocaleString()}` : null,
     ]
       .filter(Boolean)
       .join('\n');
 
     return `https://wa.me/${content.siteConfig.whatsappNumber}?text=${encodeURIComponent(message)}`;
-  }, [checkIn, checkOut, content.siteConfig.whatsappNumber, guestCount, nights, selectedRate.label, summary.total]);
+  }, [checkIn, checkOut, content.siteConfig.whatsappNumber, guestCount, nights, selectedRate.label, summary.total, t]);
 
   const handleCreateBooking = () => {
     if (!canSubmitBooking) return;
@@ -140,7 +148,7 @@ export function BookingPage() {
   const handleReceiptUpload = (file: File | undefined) => {
     if (!file || !activeSubmittedOrder) return;
     if (file.size > 5 * 1024 * 1024) {
-      window.alert('Receipt terlalu besar. Sila upload fail maksimum 5MB.');
+      window.alert(t('booking.receiptTooLarge'));
       return;
     }
     const reader = new FileReader();
@@ -168,7 +176,7 @@ export function BookingPage() {
       setCopiedAccount(true);
       window.setTimeout(() => setCopiedAccount(false), 1800);
     } catch {
-      window.alert('Tak dapat copy nombor akaun sekarang. Sila copy secara manual.');
+      window.alert(t('booking.copyFailed'));
     }
   };
 
@@ -179,20 +187,20 @@ export function BookingPage() {
   const receiptBadge = activeSubmittedOrder?.paymentRejectedReason
     ? {
         tone: 'border-[#e4b1aa] bg-[#fff1ef] text-[#9b3f35]',
-        title: 'Please re-upload clearer receipt',
+              title: t('booking.reuploadReceipt'),
         description: activeSubmittedOrder.paymentRejectedReason,
       }
     : activeSubmittedOrder?.paymentStatus === 'Deposit Paid' || activeSubmittedOrder?.paymentStatus === 'Paid Full'
       ? {
           tone: 'border-[#9ec8b7] bg-[#eef8f4] text-[#2d6e61]',
-          title: 'Booking Confirmed',
-          description: 'Payment has been reviewed and your selected dates are secured.',
+          title: t('booking.confirmed'),
+          description: t('booking.confirmedCopy'),
         }
       : activeSubmittedOrder?.receiptImage
         ? {
             tone: 'border-[#ead38f] bg-[#fff7d7] text-[#7a6016]',
-            title: 'Receipt Submitted',
-            description: 'Waiting for admin verification.',
+            title: t('booking.receiptSubmitted'),
+            description: t('booking.receiptSubmittedCopy'),
           }
         : null;
 
@@ -216,29 +224,29 @@ export function BookingPage() {
     <main className="bg-[#eef2f5] px-4 pb-20 pt-28 md:px-8">
       <div className="mx-auto grid w-full max-w-7xl gap-8 lg:grid-cols-[1.5fr_1fr]">
         <section className="lux-surface rounded-[2rem] p-6 md:p-8">
-          <p className="text-xs uppercase tracking-[0.3em] text-primary">Booking Engine</p>
-          <h1 className="mt-3 font-headline text-3xl md:text-5xl">Reserve Your Stay</h1>
+          <p className="text-xs uppercase tracking-[0.3em] text-primary">{t('booking.kicker')}</p>
+          <h1 className="mt-3 font-headline text-3xl md:text-5xl">{t('booking.title')}</h1>
           <p className="mt-4 max-w-2xl text-sm text-on-surface-variant md:text-base">
-            Pilih tarikh, rate pilihan, dan jumlah tetamu. Anggaran kos akan dikira automatik.
+            {t('booking.copy')}
           </p>
 
           <div className="mt-8 grid gap-4 md:grid-cols-3">
             <label className="lux-inset rounded-2xl p-4">
-              <span className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Check-In</span>
+              <span className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">{t('booking.checkIn')}</span>
               <div className="mt-2 flex items-center gap-2">
                 <CalendarDays size={16} className="text-primary" />
                 <input type="date" min={today} className="w-full bg-transparent text-sm outline-none" value={checkIn} onChange={(e) => setCheckIn(e.target.value)} />
               </div>
             </label>
             <label className="lux-inset rounded-2xl p-4">
-              <span className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Check-Out</span>
+              <span className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">{t('booking.checkOut')}</span>
               <div className="mt-2 flex items-center gap-2">
                 <CalendarDays size={16} className="text-primary" />
                 <input type="date" min={checkIn || today} className="w-full bg-transparent text-sm outline-none" value={checkOut} onChange={(e) => setCheckOut(e.target.value)} />
               </div>
             </label>
             <label className="lux-inset rounded-2xl p-4">
-              <span className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Guests</span>
+              <span className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">{t('booking.guests')}</span>
               <div className="mt-2 flex items-center gap-2">
                 <Users size={16} className="text-primary" />
                 <select
@@ -248,7 +256,9 @@ export function BookingPage() {
                 >
                   {guestOptions.map((option) => (
                     <option key={option} value={option}>
-                      {option === 30 ? `${option} Guests (Extra Charge)` : `${option} Guests`}
+                      {option === 30
+                        ? t('booking.guestsExtraOption', { count: option })
+                        : t('booking.guestsOption', { count: option })}
                     </option>
                   ))}
                 </select>
@@ -267,7 +277,7 @@ export function BookingPage() {
                 <p className="text-[11px] uppercase tracking-[0.2em] text-on-surface-variant">{room.period}</p>
                 <p className="mt-2 font-headline text-xl">{room.label}</p>
                 <p className="mt-2 text-lg font-semibold text-primary">RM {room.price.toLocaleString()}</p>
-                <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-on-surface-variant">{getRoomRatePriceCaption(room)}</p>
+                <p className="mt-1 text-[11px] uppercase tracking-[0.18em] text-on-surface-variant">{getRoomRatePriceCaptionByLanguage(room, language)}</p>
                 {room.note ? <p className="mt-3 text-sm text-on-surface-variant">{room.note}</p> : null}
               </div>
             ))}
@@ -275,15 +285,15 @@ export function BookingPage() {
 
           {nights > 0 && content.bookingSettings.publicHolidayDates.some((date) => eachNightInStay(checkIn, checkOut).includes(date)) ? (
             <div className="mt-4 rounded-[1.5rem] border border-[#ead38f] bg-[#fff7d7] p-4 text-sm text-[#7a6016]">
-              Tarikh pilihan termasuk cuti umum Malaysia, jadi rate Hujung Minggu / Cuti dipakai.
+              {t('booking.publicHoliday')}
             </div>
           ) : null}
 
           <div className="mt-8 grid gap-5 xl:grid-cols-2">
             <div className="xl:col-span-2 flex flex-wrap items-center justify-between gap-3 rounded-[1.5rem] border border-stone-200/80 bg-white/45 px-4 py-4">
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Browse More Dates</p>
-                <p className="mt-1 text-sm text-on-surface-variant">Semak bulan semasa atau gerak ke bulan seterusnya untuk cari tarikh sesuai.</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">{t('booking.browseDates')}</p>
+                <p className="mt-1 text-sm text-on-surface-variant">{t('booking.browseDatesCopy')}</p>
               </div>
               <div className="flex items-center gap-2">
                 <button
@@ -297,14 +307,14 @@ export function BookingPage() {
                   }`}
                 >
                   <ChevronLeft size={14} />
-                  Previous
+                  {t('booking.previous')}
                 </button>
                 <button
                   type="button"
                   onClick={() => setCalendarOffset((current) => current + 1)}
                   className="inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-4 py-3 text-xs font-bold uppercase tracking-[0.18em] text-white"
                 >
-                  Next
+                  {t('booking.next')}
                   <ChevronRight size={14} />
                 </button>
               </div>
@@ -314,13 +324,13 @@ export function BookingPage() {
               return (
                 <div key={`${anchor.getFullYear()}-${anchor.getMonth()}`} className="lux-surface-soft rounded-[1.75rem] p-5">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Availability</p>
+                    <p className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">{t('booking.availability')}</p>
                     <p className="font-headline text-2xl">
-                      {anchor.toLocaleString('en-MY', { month: 'long', year: 'numeric' })}
+                      {anchor.toLocaleString(getLanguageLocale(language), { month: 'long', year: 'numeric' })}
                     </p>
                   </div>
                   <div className="mt-4 grid grid-cols-7 gap-2 text-center text-[11px] uppercase tracking-[0.18em] text-on-surface-variant">
-                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((label) => (
+                    {Array.from({ length: 7 }, (_, index) => new Intl.DateTimeFormat(getLanguageLocale(language), { weekday: 'short' }).format(new Date(2026, 1, index + 1))).map((label) => (
                       <span key={label}>{label}</span>
                     ))}
                   </div>
@@ -362,11 +372,11 @@ export function BookingPage() {
             <div className="flex flex-wrap gap-3 text-xs uppercase tracking-[0.18em]">
               <span className="inline-flex items-center gap-2 text-on-surface-variant">
                 <span className="h-3 w-3 rounded-full bg-primary" />
-                Selected
+                {t('booking.selected')}
               </span>
               <span className="inline-flex items-center gap-2 text-on-surface-variant">
                 <span className="h-3 w-3 rounded-full bg-[#f8dede]" />
-                Unavailable
+                {t('booking.unavailable')}
               </span>
             </div>
             <div className="mt-4 flex flex-wrap gap-3">
@@ -379,62 +389,62 @@ export function BookingPage() {
                   .slice(0, 12)
                   .map((date) => (
                   <span key={date} className="rounded-full bg-[#f5d8d8] px-4 py-2 text-sm text-[#8f3b3b]">
-                    {formatLongDate(date)}
+                    {formatLongDateByLanguage(date, language)}
                   </span>
                   ))
               ) : (
-                <p className="text-sm text-on-surface-variant">Buat masa ini semua tarikh masih available.</p>
+                <p className="text-sm text-on-surface-variant">{t('booking.noUnavailableDates')}</p>
               )}
             </div>
           </div>
 
           {overlappingBlockedDates.length > 0 ? (
             <div className="mt-6 rounded-[1.5rem] border border-[#e6b6b6] bg-[#fff2f2] p-5 text-sm text-[#8f3b3b]">
-              Tarikh yang dipilih bertindih dengan unavailable date:
+              {t('booking.overlap')}
               {' '}
-              {overlappingBlockedDates.map(formatLongDate).join(', ')}
+              {overlappingBlockedDates.map((date) => formatLongDateByLanguage(date, language)).join(', ')}
             </div>
           ) : null}
         </section>
 
         <aside className="lux-surface-soft h-fit rounded-[2rem] p-6 md:p-8 lg:sticky lg:top-28">
-          <h2 className="font-headline text-2xl">Booking Summary</h2>
+          <h2 className="font-headline text-2xl">{t('booking.summary')}</h2>
           <div className="mt-6 space-y-3 text-sm text-on-surface-variant">
-            <p>{`Nights: ${nights}`}</p>
-            <p>{`Guests: ${guestCount}`}</p>
-            <p>{`Rate: ${selectedRate.label}`}</p>
-            <p>{`Status: ${isSelectionAvailable && isRateValid ? 'Available to proceed' : 'Please review selected dates'}`}</p>
+            <p>{t('booking.nights', { count: nights })}</p>
+            <p>{t('booking.summaryGuests', { count: guestCount })}</p>
+            <p>{t('booking.rate', { rate: selectedRate.label })}</p>
+            <p>{t('booking.status', { status: isSelectionAvailable && isRateValid ? t('booking.statusAvailable') : t('booking.statusReview') })}</p>
           </div>
 
           <div className="lux-inset mt-6 space-y-2 rounded-2xl p-4 text-sm">
             <div className="flex justify-between">
-              <span>Subtotal</span>
+              <span>{t('booking.subtotal')}</span>
               <span>{`RM ${summary.subtotal.toLocaleString()}`}</span>
             </div>
             <div className="flex justify-between">
-              <span>Service (10%)</span>
+              <span>{t('booking.service')}</span>
               <span>{`RM ${summary.service.toLocaleString()}`}</span>
             </div>
             {summary.extraGuestCharge > 0 && (
               <div className="flex justify-between">
-                <span>{`Extra Guest Charge (${extraGuests} pax)`}</span>
+                <span>{t('booking.extraGuestCharge', { count: extraGuests })}</span>
                 <span>{`RM ${summary.extraGuestCharge.toLocaleString()}`}</span>
               </div>
             )}
             <div className="flex justify-between">
-              <span>Tourism Tax</span>
+              <span>{t('booking.tourismTax')}</span>
               <span>{`RM ${summary.tax.toLocaleString()}`}</span>
             </div>
             <div className="mt-3 border-t border-stone-200 pt-3 text-base font-semibold text-on-surface">
               <div className="flex justify-between">
-                <span>Total Estimate</span>
+                <span>{t('booking.totalEstimate')}</span>
                 <span>{`RM ${summary.total.toLocaleString()}`}</span>
               </div>
             </div>
           </div>
 
           <div className="mt-6 rounded-[1.75rem] border border-[#d9c9b4] bg-[#fff8ef] p-5">
-            <p className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Payment Option</p>
+            <p className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">{t('booking.paymentOption')}</p>
             <div className="mt-4 grid gap-3">
               {allowedPaymentOptions.map((option) => {
                 const amount = getPaymentDueNow(summary.total, bookingBalance.depositAmount, option);
@@ -447,7 +457,9 @@ export function BookingPage() {
                         checked={paymentOptionSelected === option}
                         onChange={() => setPaymentOptionSelected(option)}
                       />
-                      {option === 'Deposit' ? `Pay Deposit RM${bookingBalance.depositAmount.toLocaleString()}` : 'Pay Full Amount'}
+                      {option === 'Deposit'
+                        ? t('booking.payDeposit', { amount: bookingBalance.depositAmount.toLocaleString() })
+                        : t('booking.payFull')}
                     </span>
                     <span className="font-semibold text-primary">RM {amount.toLocaleString()}</span>
                   </label>
@@ -456,23 +468,23 @@ export function BookingPage() {
             </div>
             <div className="mt-4 rounded-2xl border border-[#d9c9b4] bg-white/55 px-4 py-3 text-sm text-on-surface-variant">
               <span className="font-medium text-on-surface">
-                {'\u23f3'} Booking hold expires in {content.paymentRules.autoCancelAfterHours} hour if payment is not verified.
+                {'\u23f3'} {t('booking.holdExpires', { hours: content.paymentRules.autoCancelAfterHours })}
               </span>
             </div>
           </div>
 
           <div className="mt-6 space-y-4">
             <label className="block">
-              <span className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Guest Name</span>
+              <span className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">{t('booking.guestName')}</span>
               <input
                 value={guestName}
                 onChange={(event) => setGuestName(event.target.value)}
                 className="lux-inset mt-2 w-full rounded-2xl px-4 py-4 text-sm outline-none"
-                placeholder="Nama penuh"
+                placeholder={t('booking.guestNamePlaceholder')}
               />
             </label>
             <label className="block">
-              <span className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Phone Number</span>
+              <span className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">{t('booking.phoneNumber')}</span>
               <input
                 type="tel"
                 value={phone}
@@ -482,7 +494,7 @@ export function BookingPage() {
               />
             </label>
             <label className="block">
-              <span className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Email</span>
+              <span className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">{t('booking.email')}</span>
               <input
                 type="email"
                 value={email}
@@ -492,12 +504,12 @@ export function BookingPage() {
               />
             </label>
             <label className="block">
-              <span className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Notes</span>
+              <span className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">{t('booking.notes')}</span>
               <textarea
                 value={notes}
                 onChange={(event) => setNotes(event.target.value)}
                 className="lux-inset mt-2 min-h-24 w-full rounded-2xl px-4 py-4 text-sm outline-none"
-                placeholder="Request khas, event, atau masa arrival"
+                placeholder={t('booking.notesPlaceholder')}
               />
             </label>
           </div>
@@ -506,18 +518,18 @@ export function BookingPage() {
             <div className="mt-6 rounded-[1.75rem] border border-[#d9c9b4] bg-[#fff8ef] p-5">
               <div className="flex items-center gap-2 text-primary">
                 <CreditCard size={16} />
-                <p className="text-xs font-bold uppercase tracking-[0.2em]">Secure Booking Payment</p>
+                <p className="text-xs font-bold uppercase tracking-[0.2em]">{t('booking.securePayment')}</p>
               </div>
               <h3 className="mt-3 font-headline text-2xl">{activeSubmittedOrder.id}</h3>
               <p className="mt-2 text-sm text-on-surface-variant">
-                Reserve your selected dates with secure deposit payment. Booking will be confirmed after receipt verification.
+                {t('booking.paymentCopy')}
               </p>
               <div className="mt-4 grid gap-2 text-sm text-on-surface-variant">
                 {[
-                  'Booking confirmation within 15 mins - 1 hour',
-                  'Dates reserved after successful receipt review',
-                  'Official receipt sent via WhatsApp / Email',
-                  'Support available daily',
+                  t('booking.confirmation15'),
+                  t('booking.datesReserved'),
+                  t('booking.officialReceipt'),
+                  t('booking.dailySupport'),
                 ].map((item) => (
                   <div key={item} className="flex items-start gap-2">
                     <CheckCircle2 size={16} className="mt-0.5 text-[#5f9788]" />
@@ -526,67 +538,67 @@ export function BookingPage() {
                 ))}
               </div>
               <div className="mt-4 rounded-2xl border border-stone-200/80 bg-white/45 p-4 text-sm">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-on-surface-variant">Official Booking Account</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-on-surface-variant">{t('booking.officialAccount')}</p>
                 <div className="mt-4 space-y-3">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.18em] text-on-surface-variant">Bank Name</p>
-                    <p className="mt-1 font-semibold">{content.manualPayment.bankName}</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-on-surface-variant">{t('booking.bankName')}</p>
+                    <p className="mt-1 font-semibold">{displayContent.manualPayment.bankName}</p>
                   </div>
                   <div>
-                    <p className="text-xs uppercase tracking-[0.18em] text-on-surface-variant">Account Holder</p>
-                    <p className="mt-1 text-on-surface-variant">{content.manualPayment.accountHolderName}</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-on-surface-variant">{t('booking.accountHolder')}</p>
+                    <p className="mt-1 text-on-surface-variant">{displayContent.manualPayment.accountHolderName}</p>
                   </div>
                   <div>
-                    <p className="text-xs uppercase tracking-[0.18em] text-on-surface-variant">Account Number</p>
+                    <p className="text-xs uppercase tracking-[0.18em] text-on-surface-variant">{t('booking.accountNumber')}</p>
                     <div className="mt-1 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <p className="text-lg font-bold text-primary">{content.manualPayment.accountNumber}</p>
+                      <p className="text-lg font-bold text-primary">{displayContent.manualPayment.accountNumber}</p>
                       <button
                         type="button"
                         onClick={handleCopyAccountNumber}
                         className="inline-flex min-h-11 items-center justify-center rounded-full border border-stone-300 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.18em] text-on-surface"
                       >
-                        {copiedAccount ? 'Copied' : 'Copy Number'}
+                        {copiedAccount ? t('booking.copied') : t('booking.copyNumber')}
                       </button>
                     </div>
                   </div>
                 </div>
-                <p className="mt-3 text-xs leading-relaxed text-on-surface-variant">{content.manualPayment.instructions}</p>
+                <p className="mt-3 text-xs leading-relaxed text-on-surface-variant">{displayContent.manualPayment.instructions}</p>
                 <div className="mt-4 rounded-2xl border border-stone-200/80 bg-white/60 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-on-surface-variant">Quick Pay QR</p>
-                  {content.manualPayment.qrImage ? (
-                    <img src={content.manualPayment.qrImage} alt="Owner payment QR" className="mt-3 aspect-square w-full rounded-2xl object-cover" />
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-on-surface-variant">{t('booking.quickPayQr')}</p>
+                  {displayContent.manualPayment.qrImage ? (
+                    <img src={displayContent.manualPayment.qrImage} alt="Owner payment QR" className="mt-3 aspect-square w-full rounded-2xl object-cover" />
                   ) : (
-                    <p className="mt-3 text-xs text-on-surface-variant">DuitNow QR / bank QR akan dipaparkan di sini bila tersedia.</p>
+                    <p className="mt-3 text-xs text-on-surface-variant">{t('booking.qrPending')}</p>
                   )}
                 </div>
               </div>
               <div className="mt-4 rounded-2xl border border-stone-200/80 bg-white/45 p-4 text-sm">
                 <div className="flex justify-between">
-                  <span>Payment Option</span>
+                  <span>{t('booking.paymentOption')}</span>
                   <span>{activeSubmittedOrder.paymentOptionSelected}</span>
                 </div>
                 <div className="mt-2 flex justify-between">
-                  <span>Amount Due Now</span>
+                  <span>{t('booking.amountDueNow')}</span>
                   <span>{`RM ${amountDueNow.toLocaleString()}`}</span>
                 </div>
                 <div className="mt-2 flex justify-between">
-                  <span>Remaining Balance</span>
+                  <span>{t('booking.remainingBalance')}</span>
                   <span>{`RM ${activeSubmittedOrder.remainingBalance.toLocaleString()}`}</span>
                 </div>
                 <p className="mt-4 text-xs leading-relaxed text-on-surface-variant">
-                  Remaining balance can be settled before check-in or during arrival based on arrangement.
+                  {t('booking.balanceCopy')}
                 </p>
               </div>
               <label className="mt-4 block">
-                <span className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Upload Receipt</span>
+                <span className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">{t('booking.uploadReceipt')}</span>
                 <input
                   type="file"
                   accept="image/png,image/jpeg,application/pdf"
                   onChange={(event) => handleReceiptUpload(event.target.files?.[0])}
                   className="lux-inset mt-2 w-full rounded-2xl px-4 py-3 text-sm outline-none"
                 />
-                <p className="mt-2 text-xs text-on-surface-variant">Accepted: JPG, PNG, PDF</p>
-                <p className="text-xs text-on-surface-variant">Max size: 5MB</p>
+                <p className="mt-2 text-xs text-on-surface-variant">{t('booking.acceptedFiles')}</p>
+                <p className="text-xs text-on-surface-variant">{t('booking.maxSize')}</p>
               </label>
               {receiptBadge ? (
                 <div className={`mt-4 rounded-2xl border p-4 ${receiptBadge.tone}`}>
@@ -596,7 +608,7 @@ export function BookingPage() {
               ) : null}
               {activeSubmittedOrder.receiptImage ? (
                 <div className="mt-4 rounded-2xl border border-[#9ec8b7] bg-[#eef8f4] p-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Uploaded Receipt</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">{t('booking.uploadedReceipt')}</p>
                   {receiptIsPdf ? (
                     <a
                       href={activeSubmittedOrder.receiptImage}
@@ -604,10 +616,10 @@ export function BookingPage() {
                       rel="noreferrer"
                       className="mt-3 inline-flex min-h-11 items-center rounded-full border border-[#9ec8b7] bg-white px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-primary"
                     >
-                      Open Uploaded PDF
+                      {t('booking.openPdf')}
                     </a>
                   ) : (
-                    <img src={activeSubmittedOrder.receiptImage} alt="Uploaded payment receipt" className="mt-3 max-h-56 w-full rounded-xl object-contain" />
+                    <img src={activeSubmittedOrder.receiptImage} alt={t('booking.receiptAlt')} className="mt-3 max-h-56 w-full rounded-xl object-contain" />
                   )}
                 </div>
               ) : null}
@@ -619,9 +631,9 @@ export function BookingPage() {
                 rel="noreferrer"
                 className="mt-4 inline-flex w-full items-center justify-center rounded-full bg-[#22312d] px-6 py-4 text-xs font-bold uppercase tracking-[0.2em] text-white shadow-[0_18px_45px_rgba(34,49,45,0.18)] md:shadow-none lg:shadow-none max-md:fixed max-md:bottom-4 max-md:left-4 max-md:right-4 max-md:z-30"
               >
-                WhatsApp Confirmation
+                {t('booking.whatsappConfirmation')}
               </a>
-              <p className="mt-4 text-center text-xs text-on-surface-variant max-md:mb-20">Your booking information is handled privately and securely.</p>
+              <p className="mt-4 text-center text-xs text-on-surface-variant max-md:mb-20">{t('booking.privacyCopy')}</p>
             </div>
           ) : null}
 
@@ -633,7 +645,9 @@ export function BookingPage() {
               canSubmitBooking ? 'bg-primary text-white' : 'cursor-not-allowed bg-stone-300 text-stone-500'
             }`}
           >
-            {checkIn && checkOut ? (isSelectionAvailable && isRateValid ? 'Create Pending Booking' : 'Selected Dates Unavailable') : 'Select Stay Dates'}
+            {checkIn && checkOut
+              ? (isSelectionAvailable && isRateValid ? t('booking.createPending') : t('booking.selectedUnavailable'))
+              : t('booking.selectDates')}
           </button>
 
           <a
@@ -646,11 +660,11 @@ export function BookingPage() {
             }`}
           >
             <MessageCircle size={14} />
-            WhatsApp Fallback
+            {t('booking.whatsappFallback')}
           </a>
 
           <ul className="mt-6 space-y-2 text-sm text-on-surface-variant">
-            {[...content.stayInformation.capacityNotes, ...content.stayInformation.timingNotes, ...content.stayInformation.bookingPolicyNotes].map((note) => (
+            {[...displayContent.stayInformation.capacityNotes, ...displayContent.stayInformation.timingNotes, ...displayContent.stayInformation.bookingPolicyNotes].map((note) => (
               <li key={note} className="flex items-center gap-2"><CheckCircle2 size={16} className="text-primary" /> {note}</li>
             ))}
           </ul>
