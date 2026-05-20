@@ -22,3 +22,4 @@ _skill_tmp/
 .env.production
 .env.development
 !.env.example
+.vercel
