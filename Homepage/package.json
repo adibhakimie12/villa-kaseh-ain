@@ -12,6 +12,7 @@
     "test": "tsx src/lib/booking.test.ts && tsx src/lib/bookingPersistence.test.ts && tsx src/lib/adminAuth.test.ts && tsx src/lib/apiClient.test.ts"
   },
   "dependencies": {
+    "@clerk/backend": "^3.8.4",
     "@google/genai": "^1.29.0",
     "@supabase/supabase-js": "^2.104.1",
     "@tailwindcss/vite": "^4.1.14",
