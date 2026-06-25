@@ -20,8 +20,8 @@ import {
   X,
 } from 'lucide-react';
 import { useSiteContent } from '../context/SiteContentContext';
+import { updateBookingViaApi } from '../lib/apiClient';
 import { eachDateInRange, formatLongDate, monthMatrix, toIsoDate } from '../lib/date';
-import { buildNotificationRequest, sendNotificationRequest } from '../lib/notifications';
 import {
   BookingFilter,
   buildBookingEmailBody,
@@ -31,11 +31,9 @@ import {
   filterBookings,
   getAvailabilityStateForDate,
   renderBookingTemplate,
-  rejectManualPayment,
-  updateBookingStatus,
-  verifyManualPayment,
 } from '../lib/booking';
 import { getEffectivePaymentGateway } from '../lib/siteContent';
+import type { BookingAdminAction } from '../lib/apiTypes';
 import type {
   AutomationSettings,
   BookingOrder,
@@ -124,6 +122,7 @@ export function AdminPage() {
   const {
     canUseApi,
     content,
+    getAdminToken,
     isAdminAuthenticated,
     refreshFromRemote,
     resetContent,
@@ -253,6 +252,32 @@ export function AdminPage() {
     }));
   };
 
+  const replaceBooking = (booking: BookingOrder) => {
+    updateContent((current) => ({
+      ...current,
+      bookingOrders: current.bookingOrders.map((order) => (order.id === booking.id ? booking : order)),
+    }));
+    if (selectedBookingId === booking.id) {
+      setSelectedBookingId(booking.id);
+    }
+  };
+
+  const applyBookingAction = async (action: BookingAdminAction) => {
+    if (!getAdminToken) {
+      window.alert('Admin token belum tersedia. Sila login semula.');
+      return null;
+    }
+
+    try {
+      const response = await updateBookingViaApi(action, getAdminToken);
+      replaceBooking(response.booking);
+      return response.booking;
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : 'Tak dapat update booking.');
+      return null;
+    }
+  };
+
   const setPaymentGateway = (gateway: GatewayProvider) => {
     updateContent((current) => ({
       ...current,
@@ -348,19 +373,30 @@ export function AdminPage() {
   const markManualPayment = (order: BookingOrder) => {
     if (order.paymentStatus === 'Paid Full') return;
     const nextStatus = order.paymentStatus === 'Deposit Paid' || order.paymentOptionSelected === 'Full Amount' ? 'Paid Full' : 'Deposit Paid';
-    const nextOrder = verifyManualPayment(order, nextStatus, today);
-    updateBooking(order.id, () => nextOrder);
-    void sendNotificationRequest(buildNotificationRequest('payment-verified', nextOrder, content));
+    void applyBookingAction({
+      type: 'verify-payment',
+      bookingId: order.id,
+      paymentStatus: nextStatus,
+      today,
+    });
   };
 
   const rejectPayment = (order: BookingOrder) => {
     if (!window.confirm(`Reject payment receipt for ${order.id}? Dates will be released.`)) return;
-    updateBooking(order.id, (current) => rejectManualPayment(current));
+    void applyBookingAction({
+      type: 'reject-payment',
+      bookingId: order.id,
+      reason: 'Receipt rejected by admin.',
+    });
   };
 
   const cancelBooking = (order: BookingOrder) => {
     if (!window.confirm(`Cancel booking ${order.id}?`)) return;
-    updateBooking(order.id, (current) => updateBookingStatus(current, current.paymentStatus, 'Cancelled'));
+    void applyBookingAction({
+      type: 'set-booking-status',
+      bookingId: order.id,
+      bookingStatus: 'Cancelled',
+    });
     setSelectedBookingId('');
   };
 
@@ -1189,13 +1225,18 @@ export function AdminPage() {
                 <textarea
                   value={selectedBooking.notes}
                   onChange={(event) => updateBooking(selectedBooking.id, (order) => ({ ...order, notes: event.target.value, updatedAt: new Date().toISOString() }))}
+                  onBlur={(event) => void applyBookingAction({
+                    type: 'update-notes',
+                    bookingId: selectedBooking.id,
+                    notes: event.target.value,
+                  })}
                   className="lux-inset mt-3 min-h-28 w-full rounded-2xl px-4 py-4 text-sm outline-none"
                 />
               </section>
             </div>
 
             <div className="mt-6 flex flex-wrap gap-3">
-              <button type="button" onClick={() => updateBooking(selectedBooking.id, (order) => updateBookingStatus(order, order.paymentStatus, 'Confirmed'))} className="inline-flex min-h-11 items-center rounded-full bg-primary px-5 py-3 text-xs font-bold uppercase tracking-[0.16em] text-white">
+              <button type="button" onClick={() => void applyBookingAction({ type: 'set-booking-status', bookingId: selectedBooking.id, bookingStatus: 'Confirmed' })} className="inline-flex min-h-11 items-center rounded-full bg-primary px-5 py-3 text-xs font-bold uppercase tracking-[0.16em] text-white">
                 Confirm Booking
               </button>
               <button type="button" onClick={() => openWhatsApp(selectedBooking)} className="inline-flex min-h-11 items-center rounded-full border border-stone-300 px-5 py-3 text-xs font-bold uppercase tracking-[0.16em]">
@@ -1221,7 +1262,7 @@ export function AdminPage() {
               <button type="button" onClick={() => rejectPayment(selectedBooking)} className="inline-flex min-h-11 items-center rounded-full border border-[#d8aaa3] px-5 py-3 text-xs font-bold uppercase tracking-[0.16em] text-[#9b3f35]">
                 Reject Payment
               </button>
-              <button type="button" onClick={() => updateBooking(selectedBooking.id, (order) => updateBookingStatus(order, 'Refunded', 'Cancelled'))} className="inline-flex min-h-11 items-center rounded-full border border-[#d8aaa3] px-5 py-3 text-xs font-bold uppercase tracking-[0.16em] text-[#9b3f35]">
+              <button type="button" onClick={() => void applyBookingAction({ type: 'set-payment-status', bookingId: selectedBooking.id, paymentStatus: 'Refunded', bookingStatus: 'Cancelled' })} className="inline-flex min-h-11 items-center rounded-full border border-[#d8aaa3] px-5 py-3 text-xs font-bold uppercase tracking-[0.16em] text-[#9b3f35]">
                 Refund
               </button>
               <button type="button" onClick={() => setSelectedBookingId('')} className="inline-flex min-h-11 items-center rounded-full border border-stone-300 px-5 py-3 text-xs font-bold uppercase tracking-[0.16em]">
