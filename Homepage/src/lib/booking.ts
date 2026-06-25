@@ -144,6 +144,7 @@ export function createBookingOrder(input: {
   now?: Date;
 }): BookingOrder {
   const now = input.now ?? new Date();
+  const stamp = now.toISOString();
   const balance = getBookingBalance(input.totalAmount, input.paymentRules);
   return {
     id: generateBookingId(input.existingOrders),
@@ -167,8 +168,8 @@ export function createBookingOrder(input: {
     receiptUploadedAt: '',
     paymentRejectedReason: '',
     notes: input.notes ?? '',
-    createdAt: now.toISOString(),
-    updatedAt: now.toISOString(),
+    createdAt: stamp,
+    updatedAt: stamp,
   };
 }
 

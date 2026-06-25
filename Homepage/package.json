@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
-    "test": "tsx src/lib/booking.test.ts"
+    "test": "tsx src/lib/booking.test.ts && tsx src/lib/bookingPersistence.test.ts && tsx src/lib/adminAuth.test.ts && tsx src/lib/apiClient.test.ts"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
