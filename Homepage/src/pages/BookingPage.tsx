@@ -2,11 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { CalendarDays, Users, CheckCircle2, CreditCard, MessageCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useSiteContent } from '../context/SiteContentContext';
+import { createBookingViaApi, uploadReceiptViaApi } from '../lib/apiClient';
 import { eachNightInStay, monthMatrix, toIsoDate } from '../lib/date';
-import { buildNotificationRequest, sendNotificationRequest } from '../lib/notifications';
 import {
   buildCustomerPaymentWhatsappMessage,
-  createBookingOrder,
   dayDiff,
   getExtraGuestCharge,
   getAllowedPaymentOptions,
@@ -43,6 +42,8 @@ export function BookingPage() {
   const [paymentOptionSelected, setPaymentOptionSelected] = useState<PaymentOptionSelected>('Deposit');
   const [calendarOffset, setCalendarOffset] = useState(0);
   const [copiedAccount, setCopiedAccount] = useState(false);
+  const [bookingError, setBookingError] = useState('');
+  const [isSubmittingBooking, setIsSubmittingBooking] = useState(false);
 
   const blockedDates = content.bookingSettings.blockedDates;
   const activeSubmittedOrder = useMemo(
@@ -110,39 +111,35 @@ export function BookingPage() {
     return `https://wa.me/${content.siteConfig.whatsappNumber}?text=${encodeURIComponent(message)}`;
   }, [checkIn, checkOut, content.siteConfig.whatsappNumber, guestCount, nights, selectedRate.label, summary.total, t]);
 
-  const handleCreateBooking = () => {
+  const handleCreateBooking = async () => {
     if (!canSubmitBooking) return;
-    const order = createBookingOrder({
-      existingOrders: content.bookingOrders,
-      guestName: guestName.trim(),
-      phone: phone.trim(),
-      email: email.trim(),
-      checkIn,
-      checkOut,
-      pax: guestCount,
-      rateId: selectedRate.id,
-      totalAmount: summary.total,
-      paymentRules: content.paymentRules,
-      paymentOptionSelected,
-      notes: notes.trim(),
-    });
+    setBookingError('');
+    setIsSubmittingBooking(true);
 
-    updateContent((current) => ({
-      ...current,
-      bookingOrders: [order, ...current.bookingOrders],
-    }));
-    setSubmittedOrder(order);
-    void sendNotificationRequest(buildNotificationRequest('new-booking', order, content));
-  };
-
-  const updateSubmittedOrder = (updater: (order: BookingOrder) => BookingOrder) => {
-    if (!submittedOrder) return;
-    const nextOrder = updater(submittedOrder);
-    setSubmittedOrder(nextOrder);
-    updateContent((current) => ({
-      ...current,
-      bookingOrders: current.bookingOrders.map((order) => (order.id === nextOrder.id ? nextOrder : order)),
-    }));
+    try {
+      const response = await createBookingViaApi({
+        guestName: guestName.trim(),
+        phone: phone.trim(),
+        email: email.trim(),
+        checkIn,
+        checkOut,
+        pax: guestCount,
+        rateId: selectedRate.id,
+        totalAmount: summary.total,
+        paymentOptionSelected,
+        notes: notes.trim(),
+      });
+      const order = response.booking;
+      updateContent((current) => ({
+        ...current,
+        bookingOrders: [order, ...current.bookingOrders.filter((item) => item.id !== order.id)],
+      }));
+      setSubmittedOrder(order);
+    } catch (error) {
+      setBookingError(error instanceof Error ? error.message : 'Tak dapat cipta booking. Sila cuba lagi atau WhatsApp admin.');
+    } finally {
+      setIsSubmittingBooking(false);
+    }
   };
 
   const handleReceiptUpload = (file: File | undefined) => {
@@ -152,20 +149,22 @@ export function BookingPage() {
       return;
     }
     const reader = new FileReader();
-    reader.onload = () => {
-      const uploadedAt = new Date().toISOString();
-      const nextOrder = {
-        ...activeSubmittedOrder,
-        receiptImage: String(reader.result || ''),
-        receiptUploadedAt: uploadedAt,
-        paymentRejectedReason: '',
-        updatedAt: uploadedAt,
-      };
-
-      updateSubmittedOrder((order) => ({
-        ...nextOrder,
-      }));
-      void sendNotificationRequest(buildNotificationRequest('receipt-uploaded', nextOrder, content));
+    reader.onload = async () => {
+      setBookingError('');
+      try {
+        const response = await uploadReceiptViaApi({
+          bookingId: activeSubmittedOrder.id,
+          receiptImage: String(reader.result || ''),
+        });
+        const nextOrder = response.booking;
+        setSubmittedOrder(nextOrder);
+        updateContent((current) => ({
+          ...current,
+          bookingOrders: current.bookingOrders.map((order) => (order.id === nextOrder.id ? nextOrder : order)),
+        }));
+      } catch (error) {
+        setBookingError(error instanceof Error ? error.message : 'Tak dapat upload receipt. Sila cuba lagi.');
+      }
     };
     reader.readAsDataURL(file);
   };
@@ -640,15 +639,18 @@ export function BookingPage() {
           <button
             type="button"
             onClick={handleCreateBooking}
-            disabled={!canSubmitBooking}
+            disabled={!canSubmitBooking || isSubmittingBooking}
             className={`mt-6 inline-flex w-full items-center justify-center rounded-full px-6 py-4 text-xs font-bold uppercase tracking-[0.2em] ${
-              canSubmitBooking ? 'bg-primary text-white' : 'cursor-not-allowed bg-stone-300 text-stone-500'
+              canSubmitBooking && !isSubmittingBooking ? 'bg-primary text-white' : 'cursor-not-allowed bg-stone-300 text-stone-500'
             }`}
           >
-            {checkIn && checkOut
+            {isSubmittingBooking
+              ? 'Creating Booking...'
+              : checkIn && checkOut
               ? (isSelectionAvailable && isRateValid ? t('booking.createPending') : t('booking.selectedUnavailable'))
               : t('booking.selectDates')}
           </button>
+          {bookingError ? <p className="mt-4 text-sm text-[#b34343]">{bookingError}</p> : null}
 
           <a
             href={isSelectionAvailable ? whatsappUrl : undefined}
