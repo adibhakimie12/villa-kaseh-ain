@@ -40,42 +40,36 @@ npm run build
 Edit fail ini untuk update nombor/link rasmi:
 - `src/data/site.ts`
 
-## Supabase Sync
+## Neon + Clerk Backend
 
-Website sekarang menyokong 2 mode:
-- `Local fallback` untuk demo / testing cepat
-- `Supabase sync` untuk content dan blocked dates merentas device
+Website sekarang guna:
+- `Neon Postgres` untuk site content, blocked dates, bookings, dan receipts
+- `Clerk` untuk admin login di `/adminvka`
+- `Vercel API routes` untuk semua operasi database dan email server-side
+- `Local fallback` untuk demo / testing cepat bila API env belum diset
 
 ### Setup ringkas
 
-1. Buat project baru di Supabase
-2. Dalam SQL Editor, run fail [supabase/setup.sql](./supabase/setup.sql)
-3. Cipta user admin dalam Supabase Auth
-4. Set `app_metadata.role = admin` untuk user yang patut jadi admin
-5. Isi `VITE_SUPABASE_URL` dan `VITE_SUPABASE_ANON_KEY` dalam `.env`
-6. Login di `/adminvka` guna email + password Supabase
+1. Buat project baru di Neon dan copy `DATABASE_URL`
+2. Dalam Neon SQL Editor, run fail [neon/schema.sql](./neon/schema.sql)
+3. Buat Clerk application baru
+4. Isi env ini dalam Vercel project `Homepage`:
+   - `DATABASE_URL`
+   - `VITE_CLERK_PUBLISHABLE_KEY`
+   - `CLERK_SECRET_KEY`
+   - `ADMIN_EMAILS=owner@example.com,admin@example.com`
+5. Deploy ke Vercel
+6. Test public booking creation, receipt upload, dan admin booking updates sebelum delete project Supabase lama
 
 Untuk tambah admin lain kemudian:
-- cipta atau invite user baru dalam Supabase Auth
-- set `app_metadata.role = admin`
-- tak perlu edit polisi SQL lagi
-
-Query cepat untuk jadikan user admin:
-```sql
-update auth.users
-set raw_app_meta_data = jsonb_set(
-  coalesce(raw_app_meta_data, '{}'::jsonb),
-  '{role}',
-  '"admin"'::jsonb,
-  true
-)
-where email = 'emailbaru@example.com';
-```
+- tambah email admin dalam `ADMIN_EMAILS`
+- pastikan user itu boleh login melalui Clerk
+- redeploy / refresh Vercel env selepas update allowlist
 
 Selepas itu:
-- visitor biasa boleh baca content public dari Supabase
-- admin yang sah boleh update content dan blocked dates
-- kalau env tak diisi, website automatik fallback ke `localStorage`
+- visitor biasa boleh baca content public dan create booking melalui API
+- admin yang sah boleh update content, blocked dates, dan booking status
+- kalau API env belum diisi, website automatik fallback ke `localStorage` untuk content demo
 
 ## Resend Notifications
 
