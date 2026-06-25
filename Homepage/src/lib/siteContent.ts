@@ -178,8 +178,6 @@ export interface SiteContent {
 type PaymentContentLike = Pick<SiteContent, 'manualPayment' | 'paymentGateway'>;
 
 export const STORAGE_KEY = 'villa-kaseh-ain-site-content';
-export const ADMIN_SESSION_KEY = 'villa-kaseh-ain-admin-session';
-export const ADMIN_PASSCODE = 'villa2026';
 
 export const defaultSiteContent: SiteContent = {
   siteConfig: {

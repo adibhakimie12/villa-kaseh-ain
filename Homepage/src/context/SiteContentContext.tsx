@@ -23,16 +23,11 @@ interface SiteContentContextValue {
   isAdminAuthenticated: boolean;
   canUseApi: boolean;
   getAdminToken?: () => Promise<string | null>;
-  // Deprecated compatibility fields removed from UI in the Clerk task.
-  canUseSupabase: boolean;
   syncMode: SyncMode;
   syncStatus: SyncStatus;
   syncError: string;
   updateContent: (updater: (current: SiteContent) => SiteContent) => void;
   resetContent: () => void;
-  login: (passcode: string) => boolean;
-  loginWithSupabase: (email: string, password: string) => Promise<void>;
-  logout: () => void;
   refreshFromRemote: () => Promise<void>;
 }
 
@@ -121,7 +116,6 @@ export function SiteContentProvider({
     isAdminAuthenticated: isAdminSignedIn,
     canUseApi: Boolean(getAdminToken),
     getAdminToken,
-    canUseSupabase: false,
     syncMode,
     syncStatus,
     syncError,
@@ -165,16 +159,6 @@ export function SiteContentProvider({
             setSyncError(error instanceof Error ? error.message : 'Tak dapat reset data di API.');
           });
       }
-    },
-    login: () => {
-      setSyncError('Admin login is handled by Clerk.');
-      return false;
-    },
-    loginWithSupabase: async () => {
-      throw new Error('Admin login is handled by Clerk.');
-    },
-    logout: () => {
-      setSyncError('Admin logout is handled by Clerk.');
     },
     refreshFromRemote,
   }), [content, getAdminToken, isAdminSignedIn, syncError, syncMode, syncStatus]);

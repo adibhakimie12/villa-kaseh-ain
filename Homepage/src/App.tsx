@@ -11,7 +11,12 @@ import { BookingPage } from './pages/BookingPage';
 import { ContactPage } from './pages/ContactPage';
 import { HomePage } from './pages/HomePage';
 
-export default function App() {
+interface AppProps {
+  getAdminToken?: () => Promise<string | null>;
+  isAdminSignedIn?: boolean;
+}
+
+export default function App({ getAdminToken, isAdminSignedIn = false }: AppProps) {
   const [pathname, setPathname] = useState(() => normalizePath(window.location.pathname));
   const [showFirstVisitPopup, setShowFirstVisitPopup] = useState(
     () => normalizePath(window.location.pathname) === '/',
@@ -37,7 +42,7 @@ export default function App() {
   };
 
   return (
-    <SiteContentProvider>
+    <SiteContentProvider getAdminToken={getAdminToken} isAdminSignedIn={isAdminSignedIn}>
       <LanguageProvider>
         <div className="min-h-screen bg-surface pb-0 md:pb-0">
           <SiteHeader pathname={pathname} onNavigate={navigate} />

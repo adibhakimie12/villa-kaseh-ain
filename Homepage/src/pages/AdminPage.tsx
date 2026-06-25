@@ -1,4 +1,5 @@
-import { FormEvent, useMemo, useState } from 'react';
+import { SignInButton, SignOutButton } from '@clerk/clerk-react';
+import { useMemo, useState } from 'react';
 import { useEffect } from 'react';
 import type { ReactNode } from 'react';
 import {
@@ -6,7 +7,6 @@ import {
   CalendarDays,
   CreditCard,
   Eye,
-  Lock,
   LogOut,
   Mail,
   MessageCircle,
@@ -51,35 +51,7 @@ const bookingFilters: BookingFilter[] = ['Today', 'Upcoming', 'Paid', 'Pending',
 const bookingTypeOptions: BookingTypeOption[] = ['Deposit Only', 'Full Payment Only', 'Deposit + Full Payment Choice'];
 
 function AdminLoginCard() {
-  const { canUseSupabase, login, loginWithSupabase, syncError } = useSiteContent();
-  const [passcode, setPasscode] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const ok = login(passcode);
-    if (!ok) {
-      setError('Passcode tak tepat. Cuba lagi.');
-      return;
-    }
-    setError('');
-  };
-
-  const handleSupabaseLogin = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setError('');
-    setIsLoading(true);
-    try {
-      await loginWithSupabase(email, password);
-    } catch (loginError) {
-      setError(loginError instanceof Error ? loginError.message : 'Tak dapat login ke Supabase.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { canUseApi, syncError } = useSiteContent();
 
   return (
     <main className="bg-[#eef2f5] px-4 pb-20 pt-28 md:px-8">
@@ -88,81 +60,28 @@ function AdminLoginCard() {
           <p className="text-xs uppercase tracking-[0.3em] text-primary">Admin Panel</p>
           <h1 className="mt-3 font-headline text-3xl md:text-5xl">Secure Access</h1>
           <p className="mt-4 text-sm text-on-surface-variant md:text-base">
-            Panel ni versi simple untuk urus content, bookings, payment settings, dan calendar villa.
+            Login admin menggunakan akaun Clerk yang dibenarkan.
           </p>
 
-          <div className={`mt-8 grid gap-6 ${canUseSupabase ? 'lg:grid-cols-1' : 'lg:grid-cols-2'}`}>
-            {!canUseSupabase ? (
-              <form className="space-y-4 rounded-[1.75rem] border border-stone-200/80 p-5" onSubmit={handleSubmit}>
-                <p className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Local Fallback</p>
-                <label className="block">
-                  <span className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Passcode</span>
-                  <div className="lux-inset mt-2 flex items-center gap-3 rounded-2xl px-4 py-4">
-                    <Lock size={16} className="text-primary" />
-                    <input
-                      type="password"
-                      value={passcode}
-                      onChange={(event) => setPasscode(event.target.value)}
-                      className="w-full bg-transparent text-sm outline-none"
-                      placeholder="Masukkan passcode admin"
-                    />
-                  </div>
-                </label>
-
-                <button
-                  type="submit"
-                  className="inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-6 py-4 text-xs font-bold uppercase tracking-[0.2em] text-white"
-                >
-                  Unlock Local Admin
-                </button>
-                <p className="text-xs text-on-surface-variant">
-                  Default passcode semasa: <span className="font-semibold text-on-surface">villa2026</span>
-                </p>
-              </form>
-            ) : null}
-
-            <form className="space-y-4 rounded-[1.75rem] border border-stone-200/80 p-5" onSubmit={handleSupabaseLogin}>
-              <p className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Admin Login</p>
-              <label className="block">
-                <span className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Email</span>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  className="lux-inset mt-2 w-full rounded-2xl px-4 py-4 text-sm outline-none"
-                  placeholder="admin@email.com"
-                  disabled={isLoading}
-                />
-              </label>
-              <label className="block">
-                <span className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Password</span>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  className="lux-inset mt-2 w-full rounded-2xl px-4 py-4 text-sm outline-none"
-                  placeholder="Password"
-                  disabled={isLoading}
-                />
-              </label>
+          {canUseApi ? (
+            <SignInButton mode="modal">
               <button
-                type="submit"
-                disabled={isLoading}
-                className={`inline-flex min-h-11 items-center justify-center rounded-full px-6 py-4 text-xs font-bold uppercase tracking-[0.2em] ${
-                  !isLoading ? 'bg-[#22312d] text-white' : 'bg-stone-300 text-stone-500'
-                }`}
+                type="button"
+                className="mt-8 inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-6 py-4 text-xs font-bold uppercase tracking-[0.2em] text-white"
               >
-                {isLoading ? 'Signing In...' : 'Login Admin'}
+                Login Admin
               </button>
+            </SignInButton>
+          ) : (
+            <div className="mt-8 rounded-[1.5rem] border border-stone-200/80 p-5">
+              <p className="text-xs uppercase tracking-[0.2em] text-on-surface-variant">Clerk Not Configured</p>
               <p className="text-xs text-on-surface-variant">
-                {canUseSupabase
-                  ? 'Gunakan email dan password admin yang telah didaftarkan. Local fallback dimatikan pada environment ini.'
-                  : 'Login admin belum aktif pada build ini. Isi env Vercel dan redeploy untuk aktifkan sync.'}
+                Isi `VITE_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, dan `ADMIN_EMAILS` untuk aktifkan admin login.
               </p>
-            </form>
-          </div>
+            </div>
+          )}
 
-          {error || syncError ? <p className="mt-6 text-sm text-[#b34343]">{error || syncError}</p> : null}
+          {syncError ? <p className="mt-6 text-sm text-[#b34343]">{syncError}</p> : null}
         </section>
       </div>
     </main>
@@ -203,10 +122,9 @@ function textareaValueToNotes(value: string) {
 
 export function AdminPage() {
   const {
-    canUseSupabase,
+    canUseApi,
     content,
     isAdminAuthenticated,
-    logout,
     refreshFromRemote,
     resetContent,
     syncError,
@@ -526,7 +444,7 @@ export function AdminPage() {
               <div className="mt-4 flex flex-wrap gap-3 text-xs uppercase tracking-[0.18em] text-on-surface-variant">
                 <span>{`Mode: ${syncMode}`}</span>
                 <span>{`Status: ${syncStatus}`}</span>
-                {canUseSupabase ? <span>Supabase Ready</span> : <span>Local Only</span>}
+                {canUseApi ? <span>API Ready</span> : <span>Local Only</span>}
               </div>
               {syncError ? <p className="mt-3 text-sm text-[#b34343]">{syncError}</p> : null}
             </div>
@@ -555,14 +473,15 @@ export function AdminPage() {
                 <RotateCcw size={14} />
                 Reset Demo Data
               </button>
-              <button
-                type="button"
-                onClick={logout}
-                className="inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-5 py-3 text-xs font-bold uppercase tracking-[0.18em] text-white"
-              >
-                <LogOut size={14} />
-                Logout
-              </button>
+              <SignOutButton>
+                <button
+                  type="button"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-5 py-3 text-xs font-bold uppercase tracking-[0.18em] text-white"
+                >
+                  <LogOut size={14} />
+                  Logout
+                </button>
+              </SignOutButton>
             </div>
           </div>
         </section>
