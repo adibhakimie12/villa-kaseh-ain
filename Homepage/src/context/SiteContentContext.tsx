@@ -1,8 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import {
-  ADMIN_PASSCODE,
-  ADMIN_SESSION_KEY,
   SiteContent,
   buildWhatsappUrl,
   defaultSiteContent,
@@ -11,21 +9,21 @@ import {
   saveSiteContent,
 } from '../lib/siteContent';
 import {
-  fetchRemoteSiteContent,
-  isSupabaseConfigured,
-  saveRemoteSiteContent,
-  signInAdminWithPassword,
-  signOutAdmin,
-  supabase,
-} from '../lib/supabase';
+  fetchBookingsFromApi,
+  fetchSiteContentFromApi,
+  saveSiteContentToApi,
+} from '../lib/apiClient';
 
-type SyncMode = 'local' | 'supabase';
+type SyncMode = 'local' | 'api';
 type SyncStatus = 'idle' | 'loading' | 'saving' | 'saved' | 'error';
 
 interface SiteContentContextValue {
   content: SiteContent;
   whatsappUrl: string;
   isAdminAuthenticated: boolean;
+  canUseApi: boolean;
+  getAdminToken?: () => Promise<string | null>;
+  // Deprecated compatibility fields removed from UI in the Clerk task.
   canUseSupabase: boolean;
   syncMode: SyncMode;
   syncStatus: SyncStatus;
@@ -40,13 +38,17 @@ interface SiteContentContextValue {
 
 const SiteContentContext = createContext<SiteContentContextValue | null>(null);
 
-export function SiteContentProvider({ children }: { children: ReactNode }) {
+export function SiteContentProvider({
+  children,
+  getAdminToken,
+  isAdminSignedIn = false,
+}: {
+  children: ReactNode;
+  getAdminToken?: () => Promise<string | null>;
+  isAdminSignedIn?: boolean;
+}) {
   const [content, setContent] = useState<SiteContent>(() => loadSiteContent());
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return window.sessionStorage.getItem(ADMIN_SESSION_KEY) === 'true';
-  });
-  const [syncMode, setSyncMode] = useState<SyncMode>(isSupabaseConfigured ? 'supabase' : 'local');
+  const [syncMode, setSyncMode] = useState<SyncMode>('local');
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle');
   const [syncError, setSyncError] = useState('');
 
@@ -54,55 +56,36 @@ export function SiteContentProvider({ children }: { children: ReactNode }) {
     saveSiteContent(content);
   }, [content]);
 
-  useEffect(() => {
-    if (!supabase) {
-      return;
-    }
-
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) {
-        setIsAdminAuthenticated(true);
-      }
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAdminAuthenticated(Boolean(session) || window.sessionStorage.getItem(ADMIN_SESSION_KEY) === 'true');
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
   const refreshFromRemote = async () => {
-    if (!isSupabaseConfigured) {
-      return;
-    }
-
     setSyncStatus('loading');
     setSyncError('');
 
     try {
-      const remoteContent = await fetchRemoteSiteContent();
-      if (remoteContent) {
-        setContent(remoteContent);
-        saveSiteContent(remoteContent);
+      const remoteContent = await fetchSiteContentFromApi();
+      const nextContent = normalizeSiteContent(remoteContent.content);
+
+      if (isAdminSignedIn && getAdminToken) {
+        const remoteBookings = await fetchBookingsFromApi(getAdminToken);
+        nextContent.bookingOrders = remoteBookings.bookings;
       }
-      setSyncMode('supabase');
+
+      setContent(nextContent);
+      saveSiteContent(nextContent);
+      setSyncMode('api');
       setSyncStatus('saved');
     } catch (error) {
       setSyncMode('local');
       setSyncStatus('error');
-      setSyncError(error instanceof Error ? error.message : 'Tak dapat sync data dari Supabase.');
+      setSyncError(error instanceof Error ? error.message : 'Tak dapat sync data dari API.');
     }
   };
 
   useEffect(() => {
     void refreshFromRemote();
-  }, []);
+  }, [isAdminSignedIn, getAdminToken]);
 
   useEffect(() => {
-    if (!isSupabaseConfigured || typeof window === 'undefined') {
+    if (typeof window === 'undefined') {
       return;
     }
 
@@ -135,8 +118,10 @@ export function SiteContentProvider({ children }: { children: ReactNode }) {
   const value = useMemo<SiteContentContextValue>(() => ({
     content,
     whatsappUrl: buildWhatsappUrl(content.siteConfig),
-    isAdminAuthenticated,
-    canUseSupabase: isSupabaseConfigured,
+    isAdminAuthenticated: isAdminSignedIn,
+    canUseApi: Boolean(getAdminToken),
+    getAdminToken,
+    canUseSupabase: false,
     syncMode,
     syncStatus,
     syncError,
@@ -145,18 +130,18 @@ export function SiteContentProvider({ children }: { children: ReactNode }) {
         const next = normalizeSiteContent(updater(current));
         saveSiteContent(next);
 
-        if (isSupabaseConfigured && isAdminAuthenticated) {
+        if (isAdminSignedIn && getAdminToken) {
           setSyncStatus('saving');
           setSyncError('');
-          void saveRemoteSiteContent(next)
+          void saveSiteContentToApi(next, getAdminToken)
             .then(() => {
-              setSyncMode('supabase');
+              setSyncMode('api');
               setSyncStatus('saved');
             })
             .catch((error) => {
               setSyncMode('local');
               setSyncStatus('error');
-              setSyncError(error instanceof Error ? error.message : 'Tak dapat simpan data ke Supabase.');
+              setSyncError(error instanceof Error ? error.message : 'Tak dapat simpan data ke API.');
             });
         }
 
@@ -166,51 +151,33 @@ export function SiteContentProvider({ children }: { children: ReactNode }) {
     resetContent: () => {
       setContent(defaultSiteContent);
       saveSiteContent(defaultSiteContent);
-      if (isSupabaseConfigured && isAdminAuthenticated) {
+      if (isAdminSignedIn && getAdminToken) {
         setSyncStatus('saving');
         setSyncError('');
-        void saveRemoteSiteContent(defaultSiteContent)
+        void saveSiteContentToApi(defaultSiteContent, getAdminToken)
           .then(() => {
-            setSyncMode('supabase');
+            setSyncMode('api');
             setSyncStatus('saved');
           })
           .catch((error) => {
             setSyncMode('local');
             setSyncStatus('error');
-            setSyncError(error instanceof Error ? error.message : 'Tak dapat reset data di Supabase.');
+            setSyncError(error instanceof Error ? error.message : 'Tak dapat reset data di API.');
           });
       }
     },
-    login: (passcode) => {
-      if (isSupabaseConfigured) {
-        setIsAdminAuthenticated(false);
-        return false;
-      }
-
-      const ok = passcode === ADMIN_PASSCODE;
-      if (ok && typeof window !== 'undefined') {
-        window.sessionStorage.setItem(ADMIN_SESSION_KEY, 'true');
-      }
-      setIsAdminAuthenticated(ok);
-      return ok;
+    login: () => {
+      setSyncError('Admin login is handled by Clerk.');
+      return false;
     },
-    loginWithSupabase: async (email, password) => {
-      setSyncError('');
-      await signInAdminWithPassword(email, password);
-      setSyncMode('supabase');
-      setSyncStatus('saved');
-      setIsAdminAuthenticated(true);
-      await refreshFromRemote();
+    loginWithSupabase: async () => {
+      throw new Error('Admin login is handled by Clerk.');
     },
     logout: () => {
-      if (typeof window !== 'undefined') {
-        window.sessionStorage.removeItem(ADMIN_SESSION_KEY);
-      }
-      void signOutAdmin();
-      setIsAdminAuthenticated(false);
+      setSyncError('Admin logout is handled by Clerk.');
     },
     refreshFromRemote,
-  }), [content, isAdminAuthenticated, syncError, syncMode, syncStatus]);
+  }), [content, getAdminToken, isAdminSignedIn, syncError, syncMode, syncStatus]);
 
   return <SiteContentContext.Provider value={value}>{children}</SiteContentContext.Provider>;
 }
