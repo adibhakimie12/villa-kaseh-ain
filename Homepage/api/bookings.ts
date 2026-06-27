@@ -1,25 +1,25 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { requireAdminFromRequest } from '../src/lib/adminAuth';
-import type { BookingAdminAction, CreateBookingPayload } from '../src/lib/apiTypes';
+import { requireAdminFromRequest } from '../src/lib/adminAuth.js';
+import type { BookingAdminAction, CreateBookingPayload } from '../src/lib/apiTypes.js';
 import {
   bookingOrderFromRow,
   bookingOrderToRow,
   buildCreateBookingOrder,
   type BookingRow,
-} from '../src/lib/bookingPersistence';
-import { getSql } from '../src/lib/db';
-import { buildNotificationRequest } from '../src/lib/notifications';
-import { sendNotificationEmails } from '../src/lib/serverNotifications';
+} from '../src/lib/bookingPersistence.js';
+import { getSql } from '../src/lib/db.js';
+import { buildNotificationRequest } from '../src/lib/notifications.js';
+import { sendNotificationEmails } from '../src/lib/serverNotifications.js';
 import {
   defaultSiteContent,
   normalizeSiteContent,
   type BookingOrder,
-} from '../src/lib/siteContent';
+} from '../src/lib/siteContent.js';
 import {
   rejectManualPayment,
   updateBookingStatus,
   verifyManualPayment,
-} from '../src/lib/booking';
+} from '../src/lib/booking.js';
 
 type Sql = ReturnType<typeof getSql>;
 

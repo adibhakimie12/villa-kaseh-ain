@@ -7,10 +7,10 @@ import {
   getExtraGuestCharge,
   getPublicGuestOptions,
   getRoomRateSubtotal,
-} from './booking';
-import type { CreateBookingPayload, ReceiptUploadPayload } from './apiTypes';
-import { eachNightInStay, toIsoDate } from './date';
-import type { BookingOrder, SiteContent } from './siteContent';
+} from './booking.js';
+import type { CreateBookingPayload, ReceiptUploadPayload } from './apiTypes.js';
+import { eachNightInStay, toIsoDate } from './date.js';
+import type { BookingOrder, SiteContent } from './siteContent.js';
 
 export interface BookingRow {
   id: string;

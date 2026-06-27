@@ -1,5 +1,5 @@
-import { eachNightInStay, toIsoDate } from './date';
-import type { BookingOrder, BookingStatus, ManualPaymentSettings, PaymentOptionSelected, PaymentRules, PaymentStatus, RoomType } from './siteContent';
+import { eachNightInStay, toIsoDate } from './date.js';
+import type { BookingOrder, BookingStatus, ManualPaymentSettings, PaymentOptionSelected, PaymentRules, PaymentStatus, RoomType } from './siteContent.js';
 
 export type BookingFilter = 'Today' | 'Upcoming' | 'Paid' | 'Pending' | 'Cancelled';
 export type AvailabilityState = 'available' | 'booked' | 'pending' | 'blocked';

@@ -1,9 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { bookingOrderFromRow, type BookingRow, parseReceiptUploadPayload } from '../../src/lib/bookingPersistence';
-import { getSql } from '../../src/lib/db';
-import { buildNotificationRequest } from '../../src/lib/notifications';
-import { defaultSiteContent, normalizeSiteContent } from '../../src/lib/siteContent';
-import { sendNotificationEmails } from '../../src/lib/serverNotifications';
+import { bookingOrderFromRow, type BookingRow, parseReceiptUploadPayload } from '../../src/lib/bookingPersistence.js';
+import { getSql } from '../../src/lib/db.js';
+import { buildNotificationRequest } from '../../src/lib/notifications.js';
+import { defaultSiteContent, normalizeSiteContent } from '../../src/lib/siteContent.js';
+import { sendNotificationEmails } from '../../src/lib/serverNotifications.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {

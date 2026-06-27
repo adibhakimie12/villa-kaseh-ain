@@ -1,5 +1,5 @@
-import { sendNotificationEmails } from '../src/lib/serverNotifications';
-import type { NotificationEmailPayload, NotificationRequestBody } from '../src/lib/notifications';
+import { sendNotificationEmails } from '../src/lib/serverNotifications.js';
+import type { NotificationEmailPayload, NotificationRequestBody } from '../src/lib/notifications.js';
 
 interface ApiRequestLike {
   method?: string;

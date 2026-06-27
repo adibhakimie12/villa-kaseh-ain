@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { requireAdminFromRequest } from '../src/lib/adminAuth';
-import { getSql } from '../src/lib/db';
-import { defaultSiteContent, normalizeSiteContent } from '../src/lib/siteContent';
+import { requireAdminFromRequest } from '../src/lib/adminAuth.js';
+import { getSql } from '../src/lib/db.js';
+import { defaultSiteContent, normalizeSiteContent } from '../src/lib/siteContent.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {

@@ -1,4 +1,4 @@
-import type { BookingOrder, SiteContent } from './siteContent';
+import type { BookingOrder, SiteContent } from './siteContent.js';
 
 export interface ApiErrorBody {
   error: string;

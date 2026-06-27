@@ -1,4 +1,4 @@
-import type { NotificationEmailPayload, NotificationRequestBody } from './notifications';
+import type { NotificationEmailPayload, NotificationRequestBody } from './notifications.js';
 
 function parseSender() {
   const resendApiKey = process.env.RESEND_API_KEY;

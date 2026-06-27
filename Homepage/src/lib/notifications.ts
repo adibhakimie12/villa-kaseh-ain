@@ -2,8 +2,8 @@ import {
   buildNotificationSubject,
   buildNotificationText,
   type BookingNotificationEvent,
-} from './booking';
-import type { BookingOrder, SiteContent } from './siteContent';
+} from './booking.js';
+import type { BookingOrder, SiteContent } from './siteContent.js';
 
 export interface NotificationEmailPayload {
   to: string[];
